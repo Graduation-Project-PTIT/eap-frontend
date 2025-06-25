@@ -26,7 +26,7 @@ jobs:
       - name: Build and push Frontend Docker image to GHCR
         run: |
           # Define the full image name for GHCR
-          FRONTEND_IMAGE="ghcr.io/thanh-nguyen03/eap-frontend:main"
+          FRONTEND_IMAGE="ghcr.io/${{ github.repository_owner }}/eap-frontend:main"
 
           # Build the image
           docker build -t $FRONTEND_IMAGE .
