@@ -23,15 +23,22 @@ jobs:
           username: ${{ github.actor }} # Uses the GitHub user who triggered the workflow
           password: ${{ secrets.GITHUB_TOKEN }} # Automatic token for GHCR
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ghcr.io/${{ lowercase(github.repository_owner) }}/eap-frontend:main
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: Build and push Frontend Docker image to GHCR
+        run: |
+          # Define the full image name for GHCR
+          FRONTEND_IMAGE="ghcr.io/${{ env.OWNER_LC }}/eap-frontend:main"
+
+          # Build the image
+          docker build -t $FRONTEND_IMAGE .
+
+          # Push the image
+          docker push $FRONTEND_IMAGE
 
       - name: Trigger Infra deployment on server
         uses: appleboy/ssh-action@v1.0.0
