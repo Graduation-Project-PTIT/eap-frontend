@@ -1,0 +1,51 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }} # Uses the GitHub user who triggered the workflow
+          password: ${{ secrets.GITHUB_TOKEN }} # Automatic token for GHCR
+
+      - name: Build and push Frontend Docker image to GHCR
+        run: |
+          # Define the full image name for GHCR
+          FRONTEND_IMAGE="ghcr.io/thanh-nguyen03/eap-frontend:main"
+
+          # Build the image
+          docker build -t $FRONTEND_IMAGE .
+
+          # Push the image
+          docker push $FRONTEND_IMAGE
+
+      - name: Trigger Infra deployment on server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /home/thanhnd/eap/infra
+            git pull origin main
+
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ secrets.YOUR_GITHUB_USERNAME }} --password-stdin
+
+            docker compose pull frontend
+
+            docker compose up -d --no-build --remove-orphans frontend
