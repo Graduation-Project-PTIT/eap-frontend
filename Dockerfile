@@ -12,6 +12,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # Create a stage for installing production dependecies.
 FROM base as deps
 
+# Disable husky.
+ENV HUSKY 0
+
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.local/share/pnpm/store to speed up subsequent builds.
 # Leverage bind mounts to package.json and pnpm-lock.yaml to avoid having to copy them
