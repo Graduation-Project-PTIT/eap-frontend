@@ -10,7 +10,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "if [ -z \"$CI\" ]; then husky install; fi || true"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
