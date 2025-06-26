@@ -118,3 +118,103 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Sonner Toast Styling */
+/* Make all close buttons use consistent muted color */
+.toaster [data-close-button],
+.toaster button[data-close-button] {
+  /* color: hsl(var(--muted-foreground)) !important; */
+  /* background: transparent !important; */
+  /* border: none !important; */
+  /* opacity: 0.7 !important; */
+  /* transition: opacity 0.2s ease !important; */
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.toaster [data-close-button]:hover,
+.toaster button[data-close-button]:hover {
+  opacity: 1 !important;
+  background: hsl(var(--muted) / 0.1) !important;
+}
+
+/* Make toast icons bigger and properly colored */
+.toaster [data-icon],
+.toaster li[data-sonner-toast] > div:first-child {
+  width: 20px !important;
+  height: 20px !important;
+  margin-right: 6px !important;
+  margin-left: 2px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Success toast icon - green */
+.toaster li[data-sonner-toast][data-type="success"] [data-icon],
+.toaster li[data-sonner-toast][data-type="success"] > div:first-child {
+  color: hsl(142.1 76.2% 36.3%) !important; /* green-600 */
+}
+
+/* Error toast icon - red */
+.toaster li[data-sonner-toast][data-type="error"] [data-icon],
+.toaster li[data-sonner-toast][data-type="error"] > div:first-child {
+  color: hsl(0 84.2% 60.2%) !important; /* red-500 */
+}
+
+/* Warning toast icon - amber */
+.toaster li[data-sonner-toast][data-type="warning"] [data-icon],
+.toaster li[data-sonner-toast][data-type="warning"] > div:first-child {
+  color: hsl(32.1 94.6% 43.7%) !important; /* amber-500 */
+}
+
+/* Info toast icon - blue */
+.toaster li[data-sonner-toast][data-type="info"] [data-icon],
+.toaster li[data-sonner-toast][data-type="info"] > div:first-child {
+  color: hsl(221.2 83.2% 53.3%) !important; /* blue-500 */
+}
+
+/* Loading toast icon - muted */
+.toaster li[data-sonner-toast][data-type="loading"] [data-icon],
+.toaster li[data-sonner-toast][data-type="loading"] > div:first-child {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Dark mode adjustments */
+.dark .toaster li[data-sonner-toast][data-type="success"] [data-icon],
+.dark .toaster li[data-sonner-toast][data-type="success"] > div:first-child {
+  color: hsl(142.1 70.6% 45.3%) !important; /* green-500 for dark mode */
+}
+
+.dark .toaster li[data-sonner-toast][data-type="error"] [data-icon],
+.dark .toaster li[data-sonner-toast][data-type="error"] > div:first-child {
+  color: hsl(0 72.2% 50.6%) !important; /* red-500 for dark mode */
+}
+
+.dark .toaster li[data-sonner-toast][data-type="warning"] [data-icon],
+.dark .toaster li[data-sonner-toast][data-type="warning"] > div:first-child {
+  color: hsl(32.1 94.6% 43.7%) !important; /* amber-500 for dark mode */
+}
+
+.dark .toaster li[data-sonner-toast][data-type="info"] [data-icon],
+.dark .toaster li[data-sonner-toast][data-type="info"] > div:first-child {
+  color: hsl(217.2 91.2% 59.8%) !important; /* blue-400 for dark mode */
+}
+
+/* Ensure toast content has proper spacing with larger icons */
+.toaster li[data-sonner-toast] {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding: 12px 16px !important;
+}
+
+/* Adjust toast title and description spacing */
+.toaster [data-title] {
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+.toaster [data-description] {
+  opacity: 1 !important;
+  line-height: 1.4 !important;
+  margin-top: 2px !important;
+}
