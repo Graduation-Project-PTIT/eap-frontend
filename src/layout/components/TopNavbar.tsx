@@ -22,16 +22,10 @@ const TopNavbar = () => {
         return "Dashboard";
       case ROUTES.ERD_DESIGNER:
         return "ERD Designer";
-      case ROUTES.PROJECTS:
-        return "Projects";
       case ROUTES.SETTINGS:
         return "Settings";
       case ROUTES.DOCUMENTATION:
         return "Documentation";
-      case ROUTES.ANALYTICS:
-        return "Analytics";
-      case ROUTES.TEAM:
-        return "Team";
       default:
         return "Dashboard";
     }
