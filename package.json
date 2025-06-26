@@ -4,11 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "check-types": "tsc --noEmit",
+    "check-types:app": "tsc --noEmit --project tsconfig.app.json",
+    "check-types:node": "tsc --noEmit --project tsconfig.node.json",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "pnpm run check-types:app && pnpm run check-types:node && eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
-    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "prepare": "if [ -z \"$CI\" ]; then husky install; fi || true"
   },
@@ -87,7 +90,11 @@
     "vite": "^6.3.5"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
