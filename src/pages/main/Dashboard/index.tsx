@@ -28,7 +28,7 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
           Welcome to your EAP dashboard. Here you can see an overview of your projects and recent
-          activity.
+          activity. (Testing)
         </p>
       </div>
 
