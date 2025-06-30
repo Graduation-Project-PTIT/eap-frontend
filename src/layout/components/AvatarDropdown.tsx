@@ -11,11 +11,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Settings, LogOut, User } from "lucide-react";
 import ROUTES from "@/constants/routes";
+import { signOut } from "aws-amplify/auth";
+import { useAppDispatch } from "@/redux/hooks";
+import { logout } from "@/redux/features/auth/authSlice";
 
 const UserDropdown = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
-  // Mock user data - replace with actual user data from your auth system
   const user = {
     name: "John Doe",
     email: "john.doe@example.com",
@@ -27,14 +30,15 @@ const UserDropdown = () => {
   };
 
   const handleProfile = () => {
-    // Navigate to profile page when implemented
     console.log("Navigate to profile");
   };
 
-  const handleLogout = () => {
-    // Handle logout logic
-    console.log("Logout user");
-    // You would typically clear auth tokens and redirect to login
+  const handleLogout = async () => {
+    await signOut({
+      global: true,
+    });
+    dispatch(logout());
+    navigate(ROUTES.AUTH.SIGN_IN);
   };
 
   return (
