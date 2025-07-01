@@ -36,7 +36,7 @@ jobs:
           FRONTEND_IMAGE="ghcr.io/${{ env.OWNER_LC }}/eap-frontend:main"
 
           # Build the image
-          docker build . \
+          docker build \
             --build-arg VITE_COGNITO_USER_POOL_ID_ARG="${{ secrets.COGNITO_USER_POOL_ID }}" \
             --build-arg VITE_COGNITO_USER_POOL_CLIENT_ID_ARG="${{ secrets.COGNITO_USER_POOL_CLIENT_ID }}" \
             --build-arg VITE_USER_POOL_DOMAIN_ARG="${{ secrets.USER_POOL_DOMAIN }}" \
