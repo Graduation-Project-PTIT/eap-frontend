@@ -6,33 +6,19 @@ import type { SignUpStep } from "./types/sign-up-step";
 const SignUp = () => {
   const [step, setStep] = useState<SignUpStep>("SIGN_UP");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
+
+  const handleStepChange = (newStep: SignUpStep, userEmail?: string) => {
+    setStep(newStep);
+    if (userEmail) {
+      setEmail(userEmail);
+    }
+  };
 
   if (step === "CONFIRM_SIGN_UP") {
-    return (
-      <VerificationForm
-        email={email}
-        password={password}
-        verificationCode={verificationCode}
-        setVerificationCode={setVerificationCode}
-        onStepChange={setStep}
-      />
-    );
+    return <VerificationForm email={email} onStepChange={handleStepChange} />;
   }
 
-  return (
-    <SignUpForm
-      email={email}
-      setEmail={setEmail}
-      password={password}
-      setPassword={setPassword}
-      confirmPassword={confirmPassword}
-      setConfirmPassword={setConfirmPassword}
-      onStepChange={setStep}
-    />
-  );
+  return <SignUpForm onStepChange={handleStepChange} />;
 };
 
 export default SignUp;

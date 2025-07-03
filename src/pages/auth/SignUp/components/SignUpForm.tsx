@@ -1,130 +1,80 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { signUp, signInWithRedirect } from "aws-amplify/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { toast } from "@/lib/toast";
 import ROUTES from "@/constants/routes";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import getPasswordRequirements from "../utils/getPasswordRequirements";
+import { signUpSchema, type SignUpFormData } from "@/lib/validations/auth";
 import PasswordRequirements from "./PasswordRequirements";
 import type { SignUpStep } from "../types/sign-up-step";
 
 interface SignUpFormProps {
-  email: string;
-  setEmail: (email: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
-  confirmPassword: string;
-  setConfirmPassword: (confirmPassword: string) => void;
-  onStepChange: (step: SignUpStep) => void;
+  onStepChange: (step: SignUpStep, email?: string) => void;
 }
 
-const SignUpForm = ({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  confirmPassword,
-  setConfirmPassword,
-  onStepChange,
-}: SignUpFormProps) => {
+const SignUpForm = ({ onStepChange }: SignUpFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cleanup timeout on unmount
+  const form = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Handle clicks outside to hide password requirements
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      const passwordContainer = target.closest("[data-password-container]");
+      const requirementsDropdown = target.closest("[data-password-requirements]");
+
+      if (!passwordContainer && !requirementsDropdown) {
+        setShowPasswordRequirements(false);
       }
     };
-  }, []);
 
-  const handlePasswordFocus = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+    if (showPasswordRequirements) {
+      document.addEventListener("click", handleClickOutside);
     }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showPasswordRequirements]);
+
+  const handlePasswordClick = () => {
     setShowPasswordRequirements(true);
   };
 
-  const handlePasswordBlur = (e: React.FocusEvent) => {
-    // Check if the focus is moving to an element within our container
-    const currentTarget = e.currentTarget;
-    const relatedTarget = e.relatedTarget as Node;
-
-    // If focus is moving to something within our container, don't hide
-    if (relatedTarget && currentTarget.contains(relatedTarget)) {
-      return;
-    }
-
-    // Otherwise, hide after a delay
-    timeoutRef.current = setTimeout(() => {
-      setShowPasswordRequirements(false);
-    }, 150);
-  };
-
-  const handleContainerMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
-
-  const handleContainerMouseLeave = () => {
-    const passwordInput = document.getElementById("password");
-    if (passwordInput !== document.activeElement) {
-      timeoutRef.current = setTimeout(() => {
-        setShowPasswordRequirements(false);
-      }, 150);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !password || !confirmPassword) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    // Validate password requirements
-    const requirements = getPasswordRequirements(password);
-    const unmetRequirements = [];
-
-    if (!requirements.minLength) unmetRequirements.push("at least 8 characters");
-    if (!requirements.hasLowercase) unmetRequirements.push("a lowercase letter");
-    if (!requirements.hasUppercase) unmetRequirements.push("an uppercase letter");
-    if (!requirements.hasNumber) unmetRequirements.push("a number");
-    if (!requirements.hasSpecialChar) unmetRequirements.push("a special character");
-
-    if (unmetRequirements.length > 0) {
-      toast.error("Password requirements not met", {
-        description: `Password must contain ${unmetRequirements.join(", ")}`,
-      });
-      return;
-    }
-
+  const handleSignUp = async (data: SignUpFormData) => {
     setIsLoading(true);
 
     try {
       const { nextStep } = await signUp({
-        username: email,
-        password,
+        username: data.email,
+        password: data.password,
         options: {
           userAttributes: {
-            email,
+            email: data.email,
           },
         },
       });
@@ -133,7 +83,7 @@ const SignUpForm = ({
         description: "Please check your email for verification code",
       });
 
-      onStepChange(nextStep.signUpStep);
+      onStepChange(nextStep.signUpStep, data.email);
     } catch (error) {
       console.error("Sign up error:", error);
 
@@ -172,90 +122,112 @@ const SignUpForm = ({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div
-                className="relative"
-                onMouseEnter={handleContainerMouseEnter}
-                onMouseLeave={handleContainerMouseLeave}
-              >
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={handlePasswordFocus}
-                  onBlur={handlePasswordBlur}
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-
-                {/* Password Requirements Dropdown - Positioned as overlay */}
-                {showPasswordRequirements && (
-                  <div className="absolute top-full left-0 right-0 mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 transition-all duration-200 ease-in-out animate-in fade-in-0 slide-in-from-top-1">
-                    <PasswordRequirements password={password} />
-                  </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSignUp)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          type="email"
+                          placeholder="Enter your email"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            </div>
+              />
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative" data-password-container>
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          onClick={handlePasswordClick}
+                          className="pl-10 pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create Account"}
-            </Button>
-          </form>
+                        {/* Password Requirements Dropdown - Positioned as overlay */}
+                        {showPasswordRequirements && (
+                          <div
+                            data-password-requirements
+                            className="absolute top-full left-0 right-0 mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 transition-all duration-200 ease-in-out animate-in fade-in-0 slide-in-from-top-1"
+                          >
+                            <PasswordRequirements password={field.value || ""} />
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm your password"
+                          className="pl-10 pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Creating account..." : "Create Account"}
+              </Button>
+            </form>
+          </Form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
