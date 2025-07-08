@@ -32,7 +32,7 @@ jobs:
       - name: Build and push Frontend Docker image to GHCR
         run: |
           # Define the full image name for GHCR
-          FRONTEND_IMAGE="ghcr.io/${{ env.OWNER_LC }}/eap-frontend:main"
+          FRONTEND_IMAGE="ghcr.io/$OWNER_LC/eap-frontend:main"
 
           # Build the image
           docker build \
@@ -79,7 +79,3 @@ jobs:
             Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             **Build Status: ${{ needs.build-and-push.result }}**
-          color-success: 0x2ECC71 # Green
-          color-failure: 0xE74C3C # Red
-          color-cancelled: 0xF1C40F # Yellow
-          include-details: true
