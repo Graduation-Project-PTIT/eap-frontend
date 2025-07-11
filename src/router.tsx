@@ -6,6 +6,7 @@ import Forbidden from "./pages/fallback/Forbidden";
 import NotFound from "./pages/fallback/NotFound";
 import Dashboard from "./pages/main/Dashboard";
 import ERDDesigner from "./pages/main/ERDDesigner";
+import ERDEvaluation from "./pages/main/ERDEvaluation";
 import Documentation from "./pages/main/Documentation";
 import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
@@ -35,6 +36,10 @@ const mainRoutes = {
     {
       path: ROUTES.ERD_DESIGNER,
       element: <ERDDesigner />,
+    },
+    {
+      path: ROUTES.ERD_EVALUATION,
+      element: <ERDEvaluation />,
     },
     {
       path: ROUTES.DOCUMENTATION,
