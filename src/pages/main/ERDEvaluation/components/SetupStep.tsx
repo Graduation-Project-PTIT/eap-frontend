@@ -14,9 +14,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "@/lib/toast";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setupStepSchema } from "../constants/schemas";
+import { useWorkflow } from "../context/WorkflowContext";
+import { useUploadFile, useStartEvaluation, fileApi } from "@/api";
+import LoadingSpinner from "./LoadingSpinner";
+import type { z } from "zod";
+
+type SetupStepFormData = z.infer<typeof setupStepSchema>;
 
 interface SetupStepProps {
   onNext: () => void;
@@ -26,11 +32,34 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const form = useForm({
+  // Workflow context
+  const { state, setQuestion, setFile, setFileUrl, setEvaluationId, setLoading, setError } =
+    useWorkflow();
+
+  // API hooks
+  const uploadFile = useUploadFile();
+  const startEvaluation = useStartEvaluation({
+    onSuccess: (data) => {
+      console.log("SetupStep - startEvaluation onSuccess", data);
+      // Set the actual evaluation ID from the response
+      setEvaluationId(data.id);
+      setLoading(false);
+      toast.success("Evaluation started successfully!");
+    },
+    onError: (error) => {
+      console.error("Evaluation start error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to start evaluation";
+      setError(errorMessage);
+      setLoading(false);
+      toast.error(errorMessage);
+    },
+  });
+
+  const form = useForm<SetupStepFormData>({
     resolver: zodResolver(setupStepSchema),
     defaultValues: {
-      questionDescription: "",
-      erdImage: null,
+      questionDescription: state.questionDescription || "",
+      erdImage: state.uploadedFile || null,
     },
   });
 
@@ -88,18 +117,59 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
     }
   };
 
-  const onSubmit = (data: { questionDescription: string; erdImage?: File }) => {
+  const onSubmit = async (data: SetupStepFormData) => {
     if (!data.erdImage) {
       toast.error("Please upload an ERD image");
       return;
     }
-    toast.success("Setup completed successfully!");
-    console.log("Form data:", data); // For debugging
-    onNext();
+
+    // Prevent multiple submissions
+    if (state.isLoading) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Save form data to workflow state
+      setQuestion(data.questionDescription);
+      setFile(data.erdImage);
+
+      // Upload file to file service
+      toast.info("Uploading ERD image...");
+      const uploadResult = await uploadFile.mutateAsync({ file: data.erdImage });
+
+      if (!uploadResult.file) {
+        throw new Error("Failed to upload file");
+      }
+
+      // Get the file render URL for the evaluation service
+      const fileUrl = fileApi.getFileRenderUrl(uploadResult.file.id);
+      setFileUrl(fileUrl);
+
+      toast.success("Setup completed successfully!");
+      toast.info("Starting ERD evaluation...");
+
+      // Start evaluation workflow synchronously
+      startEvaluation.mutate({ erdImage: fileUrl });
+
+      // Navigate to extract step after starting evaluation
+      onNext();
+    } catch (error) {
+      console.error("Setup error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to start evaluation";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {state.isLoading && (
+        <LoadingSpinner fullScreen={true} message="Processing your ERD image..." size="lg" />
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Setup Evaluation Parameters</CardTitle>
@@ -116,7 +186,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                     <FormLabel>Question Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter a detailed description of what you want to evaluate in the ERD. For example: 'Analyze the database design for an e-commerce system focusing on user management, product catalog, and order processing...'"
+                        placeholder="Enter a detailed description of the objective of the ERD. For example: 'Below is an ERD for an e-commerce system focusing on user management, product catalog, and order processing...'"
                         className="min-h-32"
                         {...field}
                       />
@@ -208,8 +278,15 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
 
               {/* Submit Button */}
               <div className="flex justify-end pt-4">
-                <Button type="submit" size="lg">
-                  Start Evaluation
+                <Button type="submit" size="lg" disabled={state.isLoading}>
+                  {state.isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Start Evaluation"
+                  )}
                 </Button>
               </div>
             </form>

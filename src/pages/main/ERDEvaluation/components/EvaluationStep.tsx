@@ -3,31 +3,192 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CheckCircle, AlertTriangle, XCircle, Download, Save } from "lucide-react";
+import { useWorkflow } from "../context/WorkflowContext";
+import ERDFlowVisualization from "./ERDFlowVisualization";
+import {
+  exportAsJSON,
+  exportAsCSV,
+  exportAsPDF,
+  saveToHistory,
+  generateReportId,
+  type EvaluationReport,
+} from "../utils/exportUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
+import { toast } from "@/lib/toast";
+import type { ERDExtractionResult } from "@/api/services/evaluation-service";
 
 interface EvaluationStepProps {
   onBack: () => void;
 }
 
-const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
-  // Placeholder evaluation data
-  const evaluationResults = {
-    overallScore: 85,
+// Helper function to generate evaluation results based on ERD data
+const generateEvaluationResults = (data: ERDExtractionResult | null) => {
+  if (!data || !data.entities.length) {
+    return {
+      overallScore: 0,
+      categories: [],
+      issues: [{ type: "error", message: "No data available for evaluation" }],
+      recommendations: ["Please complete the extraction and refinement steps first"],
+    };
+  }
+
+  const entities = data.entities;
+  const totalAttributes = entities.reduce((acc, e) => acc + e.attributes.length, 0);
+  const primaryKeys = entities.reduce(
+    (acc, e) => acc + e.attributes.filter((a) => a.primaryKey).length,
+    0,
+  );
+  const foreignKeys = entities.reduce(
+    (acc, e) => acc + e.attributes.filter((a) => a.foreignKey).length,
+    0,
+  );
+
+  // Calculate scores based on ERD quality metrics
+  const normalizationScore = Math.min(
+    100,
+    (entities.length / Math.max(1, totalAttributes / 5)) * 100,
+  );
+  const relationshipScore = Math.min(100, (foreignKeys / Math.max(1, entities.length)) * 100);
+  const namingScore = entities.every((e) => /^[A-Z][a-zA-Z_]*$/.test(e.name)) ? 90 : 60;
+  const dataTypeScore = entities.every((e) =>
+    e.attributes.every((a) => a.type && a.type.length > 0),
+  )
+    ? 95
+    : 70;
+
+  const overallScore = Math.round(
+    (normalizationScore + relationshipScore + namingScore + dataTypeScore) / 4,
+  );
+
+  const issues = [];
+  const recommendations = [];
+
+  if (primaryKeys === 0) {
+    issues.push({ type: "error", message: "No primary keys found in any entity" });
+    recommendations.push("Add primary keys to all entities");
+  }
+
+  if (foreignKeys === 0) {
+    issues.push({ type: "warning", message: "No foreign key relationships found" });
+    recommendations.push("Consider adding relationships between entities");
+  }
+
+  if (entities.some((e) => e.attributes.length > 10)) {
+    issues.push({
+      type: "warning",
+      message: "Some entities have many attributes - consider normalization",
+    });
+    recommendations.push("Break down large entities into smaller, more focused ones");
+  }
+
+  return {
+    overallScore,
     categories: [
-      { name: "Normalization", score: 90, status: "excellent" },
-      { name: "Relationship Design", score: 85, status: "good" },
-      { name: "Naming Conventions", score: 75, status: "fair" },
-      { name: "Data Types", score: 95, status: "excellent" },
+      {
+        name: "Normalization",
+        score: Math.round(normalizationScore),
+        status: getScoreStatus(normalizationScore),
+      },
+      {
+        name: "Relationship Design",
+        score: Math.round(relationshipScore),
+        status: getScoreStatus(relationshipScore),
+      },
+      {
+        name: "Naming Conventions",
+        score: Math.round(namingScore),
+        status: getScoreStatus(namingScore),
+      },
+      {
+        name: "Data Types",
+        score: Math.round(dataTypeScore),
+        status: getScoreStatus(dataTypeScore),
+      },
     ],
-    issues: [
-      { type: "warning", message: "Consider adding indexes for frequently queried columns" },
-      { type: "error", message: "Missing foreign key constraint in Order_Items table" },
-      { type: "info", message: "Entity names follow good naming conventions" },
-    ],
-    recommendations: [
-      "Add composite indexes for multi-column queries",
-      "Consider partitioning large tables",
-      "Implement proper cascade rules for foreign keys",
-    ],
+    issues,
+    recommendations,
+  };
+};
+
+const getScoreStatus = (score: number) => {
+  if (score >= 90) return "excellent";
+  if (score >= 75) return "good";
+  if (score >= 60) return "fair";
+  return "poor";
+};
+
+const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
+  const { state, resetWorkflow } = useWorkflow();
+
+  // Use refined data or fallback to extracted data
+  const finalData = state.refinedData || state.extractedData;
+
+  // Generate evaluation results based on the ERD data
+  const evaluationResults = generateEvaluationResults(finalData);
+
+  const handleStartNewEvaluation = () => {
+    resetWorkflow();
+  };
+
+  const createReport = (): EvaluationReport => {
+    return {
+      id: generateReportId(),
+      timestamp: new Date().toISOString(),
+      questionDescription: state.questionDescription,
+      originalData: state.extractedData || { entities: [] },
+      refinedData: finalData || { entities: [] },
+      evaluationResults,
+    };
+  };
+
+  const handleSaveToHistory = () => {
+    try {
+      const report = createReport();
+      saveToHistory(report);
+      toast.success("Evaluation saved to history successfully!");
+    } catch (error) {
+      console.error("Failed to save to history:", error);
+      toast.error("Failed to save to history. Please try again.");
+    }
+  };
+
+  const handleExportJSON = () => {
+    try {
+      const report = createReport();
+      exportAsJSON(report);
+      toast.success("Report exported as JSON successfully!");
+    } catch (error) {
+      console.error("Failed to export JSON:", error);
+      toast.error("Failed to export report. Please try again.");
+    }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      const report = createReport();
+      exportAsCSV(report);
+      toast.success("Report exported as CSV successfully!");
+    } catch (error) {
+      console.error("Failed to export CSV:", error);
+      toast.error("Failed to export report. Please try again.");
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const report = createReport();
+      exportAsPDF(report);
+      toast.success("Report exported as text file successfully!");
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      toast.error("Failed to export report. Please try again.");
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -91,6 +252,18 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
         </CardContent>
       </Card>
 
+      {/* Final ERD Visualization */}
+      {finalData && finalData.entities.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Final ERD Structure</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ERDFlowVisualization data={finalData} isEditable={false} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Issues and Recommendations */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Issues */}
@@ -132,15 +305,25 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleSaveToHistory}>
               <Save className="h-4 w-4 mr-2" />
               Save to History
             </Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
-            <Button>Start New Evaluation</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Report
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportJSON}>Export as JSON</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV}>Export as CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>Export as Text</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={handleStartNewEvaluation}>Start New Evaluation</Button>
           </div>
         </CardContent>
       </Card>

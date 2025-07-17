@@ -49,23 +49,120 @@ export interface EvaluationListResponse {
   totalPages: number;
 }
 
+// Mastra API response format
+export interface MastraWorkflowResponse {
+  status: "success" | "failed" | "error" | "running" | "in_progress" | "pending";
+  result?: ERDExtractionResult;
+  error?: string;
+  payload?: Record<string, unknown>;
+  steps?: Record<string, unknown>;
+}
+
 // API Functions for Mastra evaluation workflow
 export const evaluationApi = {
-  // Start evaluation workflow
+  // Start evaluation workflow synchronously
   startEvaluation: async (data: EvaluationRequest): Promise<EvaluationWorkflowResponse> => {
-    const response = await evaluationServiceClient.post<EvaluationWorkflowResponse>(
-      "/workflows/evaluationWorkflow/run",
-      data,
-    );
-    return response.data;
+    try {
+      // First create a run
+      const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
+        "/workflows/evaluationWorkflow/create-run",
+      );
+
+      const runId = createRunResponse.data.runId;
+
+      if (!runId) {
+        throw new Error("Failed to create evaluation run - no run ID returned");
+      }
+
+      // Then start the workflow synchronously
+      const response = await evaluationServiceClient.post<MastraWorkflowResponse>(
+        `/workflows/evaluationWorkflow/start?runId=${runId}`,
+        { inputData: data },
+      );
+
+      // Transform Mastra response format to our expected format
+      const responseData = response.data;
+
+      // Map Mastra status to our expected status
+      let status: "pending" | "running" | "completed" | "failed" = "pending";
+      if (responseData.status === "success") {
+        status = "completed";
+      } else if (responseData.status === "failed" || responseData.status === "error") {
+        status = "failed";
+      } else if (responseData.status === "running" || responseData.status === "in_progress") {
+        status = "running";
+      }
+
+      return {
+        id: runId,
+        status,
+        result: responseData.result,
+        error: responseData.error,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Error starting evaluation:", error);
+      throw error;
+    }
   },
 
   // Get evaluation workflow status
   getEvaluation: async (id: string): Promise<EvaluationWorkflowResponse> => {
-    const response = await evaluationServiceClient.get<EvaluationWorkflowResponse>(
+    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
       `/workflows/evaluationWorkflow/runs/${id}`,
     );
-    return response.data;
+
+    // Transform Mastra response format to our expected format
+    const data = response.data;
+
+    // Map Mastra status to our expected status
+    let status: "pending" | "running" | "completed" | "failed" = "pending";
+    if (data.status === "success") {
+      status = "completed";
+    } else if (data.status === "failed" || data.status === "error") {
+      status = "failed";
+    } else if (data.status === "running" || data.status === "in_progress") {
+      status = "running";
+    }
+
+    return {
+      id,
+      status,
+      result: data.result,
+      error: data.error,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  },
+
+  // Get evaluation execution result
+  getEvaluationResult: async (id: string): Promise<EvaluationWorkflowResponse> => {
+    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
+      `/workflows/evaluationWorkflow/runs/${id}/execution-result`,
+    );
+
+    // Transform Mastra response format to our expected format
+    const data = response.data;
+
+    // Map Mastra status to our expected status
+    let status: "pending" | "running" | "completed" | "failed" = "pending";
+    if (data.status === "success") {
+      status = "completed";
+    } else if (data.status === "failed" || data.status === "error") {
+      status = "failed";
+    } else if (data.status === "running" || data.status === "in_progress") {
+      status = "running";
+    }
+
+    return {
+      id,
+      status,
+      result: data.result,
+      error: data.error,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   },
 
   // Get evaluation list (if supported by Mastra)
@@ -87,14 +184,23 @@ export const evaluationApi = {
 };
 
 // React Query Hooks
-export const useStartEvaluation = () => {
+export interface UseStartEvaluationOptions {
+  onSuccess?: (data: EvaluationWorkflowResponse) => void;
+  onError?: (error: unknown) => void;
+}
+
+export const useStartEvaluation = ({ onSuccess, onError }: UseStartEvaluationOptions = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: evaluationApi.startEvaluation,
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate evaluation lists to refresh the data
       queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.lists() });
+      onSuccess?.(data);
+    },
+    onError: (error) => {
+      onError?.(error);
     },
   });
 };
@@ -110,16 +216,38 @@ export const useEvaluations = (params: EvaluationListParams = {}) => {
 export const useEvaluation = (id: string, enabled = true) => {
   return useQuery({
     queryKey: queryKeys.evaluations.detail(id),
-    queryFn: () => evaluationApi.getEvaluation(id),
+    queryFn: async () => {
+      try {
+        // First try to get the execution result
+        return await evaluationApi.getEvaluationResult(id);
+      } catch {
+        // If execution result is not available, fall back to run status
+        return await evaluationApi.getEvaluation(id);
+      }
+    },
     enabled: enabled && !!id,
     refetchInterval: (query) => {
-      // Auto-refresh if evaluation is still processing
-      if (query.state.data?.status === "pending" || query.state.data?.status === "running") {
+      // Only poll if we have data and it's still processing
+      const data = query.state.data;
+      if (data && (data.status === "pending" || data.status === "running")) {
         return 2000; // 2 seconds
       }
-      return false;
+      return false; // Stop polling when completed, failed, or no data
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 0, // Always consider data stale to allow polling
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry if it's a 404 (run not found)
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
+          return false;
+        }
+      }
+      return failureCount < 3;
+    },
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: true, // Refetch when component mounts
   });
 };
 

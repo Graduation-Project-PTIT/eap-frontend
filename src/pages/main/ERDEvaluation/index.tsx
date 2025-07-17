@@ -8,35 +8,59 @@ import ExtractDiagramStep from "./components/ExtractDiagramStep.tsx";
 import ManualRefineStep from "./components/ManualRefineStep.tsx";
 import EvaluationStep from "./components/EvaluationStep.tsx";
 import HistorySidebar from "./components/HistorySidebar.tsx";
+import ErrorBoundary from "./components/ErrorBoundary.tsx";
+import ErrorDisplay from "./components/ErrorDisplay.tsx";
+import { WorkflowProvider, useWorkflow } from "./context/WorkflowContext.tsx";
 
 export type WorkflowStep = "setup" | "extract" | "refine" | "evaluation";
 
-const ERDEvaluation = () => {
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>("setup");
+const ERDEvaluationContent = () => {
+  const { state, setStep, setError, setLoading } = useWorkflow();
   const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
 
+  // Helper function to change step and clear loading state
+  const handleStepChange = (step: WorkflowStep) => {
+    setLoading(false); // Clear any loading state when changing steps
+    setStep(step);
+  };
+
+  // Show error display if there's a global error
+  if (state.error) {
+    return (
+      <div className="container mx-auto p-6">
+        <ErrorDisplay
+          title="Workflow Error"
+          message={state.error}
+          onRetry={() => setError(null)}
+          showDetails={true}
+          details={state.error}
+        />
+      </div>
+    );
+  }
+
   const renderStepContent = () => {
-    switch (currentStep) {
+    switch (state.currentStep) {
       case "setup":
-        return <SetupStep onNext={() => setCurrentStep("extract")} />;
+        return <SetupStep onNext={() => handleStepChange("extract")} />;
       case "extract":
         return (
           <ExtractDiagramStep
-            onNext={() => setCurrentStep("refine")}
-            onBack={() => setCurrentStep("setup")}
+            onNext={() => handleStepChange("refine")}
+            onBack={() => handleStepChange("setup")}
           />
         );
       case "refine":
         return (
           <ManualRefineStep
-            onNext={() => setCurrentStep("evaluation")}
-            onBack={() => setCurrentStep("extract")}
+            onNext={() => handleStepChange("evaluation")}
+            onBack={() => handleStepChange("extract")}
           />
         );
       case "evaluation":
-        return <EvaluationStep onBack={() => setCurrentStep("refine")} />;
+        return <EvaluationStep onBack={() => handleStepChange("refine")} />;
       default:
-        return <SetupStep onNext={() => setCurrentStep("extract")} />;
+        return <SetupStep onNext={() => handleStepChange("extract")} />;
     }
   };
 
@@ -69,7 +93,7 @@ const ERDEvaluation = () => {
               <CardTitle>Evaluation Workflow</CardTitle>
             </CardHeader>
             <CardContent>
-              <WorkflowSteps currentStep={currentStep} onStepClick={setCurrentStep} />
+              <WorkflowSteps currentStep={state.currentStep} onStepClick={handleStepChange} />
             </CardContent>
           </Card>
 
@@ -84,6 +108,17 @@ const ERDEvaluation = () => {
         onToggle={() => setIsHistorySidebarOpen(!isHistorySidebarOpen)}
       />
     </div>
+  );
+};
+
+// Main component with provider
+const ERDEvaluation = () => {
+  return (
+    <ErrorBoundary>
+      <WorkflowProvider>
+        <ERDEvaluationContent />
+      </WorkflowProvider>
+    </ErrorBoundary>
   );
 };
 

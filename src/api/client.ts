@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse } from "axios";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -6,7 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 // Service paths - these match the nginx routing configuration
 export const SERVICE_PATHS = {
   FILE: "/files", // nginx routes /api/files to file service
-  EVALUATION: "/evaluation", // for future evaluation service
+  EVALUATION: "/evaluation", // nginx routes /api/evaluation to evaluation service
 } as const;
 
 // Create axios instance with default configuration
@@ -21,12 +22,18 @@ const createApiClient = (): AxiosInstance => {
 
   // Request interceptor for adding auth token
   client.interceptors.request.use(
-    (config) => {
-      // Get token from localStorage or your auth store
-      const token = localStorage.getItem("accessToken");
+    async (config) => {
+      try {
+        // Get token from AWS Amplify auth session
+        const session = await fetchAuthSession();
+        const token = session.tokens?.accessToken?.toString();
 
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        // If user is not authenticated, continue without token
+        console.warn("No auth session available:", error);
       }
 
       // Log request in development
@@ -34,6 +41,7 @@ const createApiClient = (): AxiosInstance => {
         console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
           data: config.data,
           params: config.params,
+          hasAuth: !!config.headers.Authorization,
         });
       }
 
@@ -73,8 +81,8 @@ const createApiClient = (): AxiosInstance => {
 
       // Handle common error scenarios
       if (error.response?.status === 401) {
-        // Unauthorized - redirect to login or refresh token
-        localStorage.removeItem("accessToken");
+        // Unauthorized - redirect to login
+        console.warn("Authentication failed, redirecting to login");
         window.location.href = "/auth/login";
       }
 

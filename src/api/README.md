@@ -67,8 +67,10 @@ Integrates with the Mastra evaluation workflow for ERD analysis.
 
 **API Endpoints:**
 
-- `POST /workflows/evaluationWorkflow/run` - Start evaluation
+- `POST /workflows/evaluationWorkflow/create-run` - Create evaluation run
+- `POST /workflows/evaluationWorkflow/start?runId=:id` - Start evaluation synchronously
 - `GET /workflows/evaluationWorkflow/runs/:id` - Get evaluation status
+- `GET /workflows/evaluationWorkflow/runs/:id/execution-result` - Get evaluation result
 - `GET /workflows/evaluationWorkflow/runs` - List evaluations
 - `POST /workflows/evaluationWorkflow/runs/:id/cancel` - Cancel evaluation
 
