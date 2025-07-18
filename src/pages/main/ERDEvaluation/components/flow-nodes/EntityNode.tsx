@@ -19,6 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Edit3, Key, Link, Type, Database, Plus, Trash2 } from "lucide-react";
 import { type ERDEntity } from "@/api/services/evaluation-service";
 
@@ -26,10 +33,18 @@ interface EntityNodeData {
   entity: ERDEntity;
   isEditable: boolean;
   onEntityChange?: (entity: ERDEntity) => void;
+  onEntityDelete?: () => void;
+  availableEntities?: string[]; // List of available entities for foreign key relationships
 }
 
 const EntityNode: React.FC<NodeProps> = ({ data }) => {
-  const { entity, isEditable, onEntityChange } = data as unknown as EntityNodeData;
+  const {
+    entity,
+    isEditable,
+    onEntityChange,
+    onEntityDelete,
+    availableEntities = [],
+  } = data as unknown as EntityNodeData;
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedEntity, setEditedEntity] = useState<ERDEntity>(entity);
 
@@ -52,6 +67,9 @@ const EntityNode: React.FC<NodeProps> = ({ data }) => {
           foreignKey: false,
           unique: false,
           nullable: true,
+          foreignKeyTable: "",
+          foreignKeyAttribute: "",
+          relationType: "many-to-one",
         },
       ],
     });
@@ -103,7 +121,7 @@ const EntityNode: React.FC<NodeProps> = ({ data }) => {
                     <Edit3 className="h-3 w-3" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Edit Entity: {entity.name}</DialogTitle>
                   </DialogHeader>
@@ -132,6 +150,9 @@ const EntityNode: React.FC<NodeProps> = ({ data }) => {
                             <TableHead>Type</TableHead>
                             <TableHead>PK</TableHead>
                             <TableHead>FK</TableHead>
+                            <TableHead>FK Table</TableHead>
+                            <TableHead>FK Attribute</TableHead>
+                            <TableHead>Relation Type</TableHead>
                             <TableHead>Unique</TableHead>
                             <TableHead>Nullable</TableHead>
                             <TableHead>Actions</TableHead>
@@ -173,6 +194,58 @@ const EntityNode: React.FC<NodeProps> = ({ data }) => {
                                 />
                               </TableCell>
                               <TableCell>
+                                <Select
+                                  value={attr.foreignKeyTable || ""}
+                                  onValueChange={(value) =>
+                                    updateAttribute(index, "foreignKeyTable", value)
+                                  }
+                                  disabled={!attr.foreignKey}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Select table" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availableEntities
+                                      .filter((entityName) => entityName !== entity.name)
+                                      .map((entityName) => (
+                                        <SelectItem key={entityName} value={entityName}>
+                                          {entityName}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={attr.foreignKeyAttribute || ""}
+                                  onChange={(e) =>
+                                    updateAttribute(index, "foreignKeyAttribute", e.target.value)
+                                  }
+                                  className="h-8"
+                                  disabled={!attr.foreignKey}
+                                  placeholder="id"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={attr.relationType || "many-to-one"}
+                                  onValueChange={(value) =>
+                                    updateAttribute(index, "relationType", value)
+                                  }
+                                  disabled={!attr.foreignKey}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="one-to-one">1:1</SelectItem>
+                                    <SelectItem value="one-to-many">1:N</SelectItem>
+                                    <SelectItem value="many-to-one">N:1</SelectItem>
+                                    <SelectItem value="many-to-many">N:N</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
                                 <input
                                   type="checkbox"
                                   checked={attr.unique}
@@ -206,11 +279,25 @@ const EntityNode: React.FC<NodeProps> = ({ data }) => {
                       </Table>
                     </div>
 
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                        Cancel
+                    <div className="flex justify-between">
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (onEntityDelete) {
+                            onEntityDelete();
+                          }
+                          setIsEditDialogOpen(false);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Entity
                       </Button>
-                      <Button onClick={handleSaveChanges}>Save Changes</Button>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveChanges}>Save Changes</Button>
+                      </div>
                     </div>
                   </div>
                 </DialogContent>
