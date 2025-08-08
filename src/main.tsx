@@ -6,15 +6,18 @@ import "./index.css";
 import App from "./App.tsx";
 import { Provider as StoreProvider } from "react-redux";
 import { store } from "./redux/store.ts";
+import { QueryProvider } from "./api/providers/QueryProvider";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <BrowserRouter>
-        <StoreProvider store={store}>
-          <App />
-        </StoreProvider>
-      </BrowserRouter>
-    </ThemeProvider>
+    <QueryProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <BrowserRouter>
+          <StoreProvider store={store}>
+            <App />
+          </StoreProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryProvider>
   </StrictMode>,
 );

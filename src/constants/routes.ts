@@ -7,6 +7,7 @@ const ROUTES = {
   },
   DASHBOARD: "/",
   ERD_DESIGNER: "/erd-designer",
+  ERD_EVALUATION: "/erd-evaluation",
   DOCUMENTATION: "/docs",
   SETTINGS: "/settings",
 
