@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
 import ERDFlowVisualization from "./ERDFlowVisualization";
+import { useSendEvent } from "@/api";
+import { toast } from "@/lib/toast";
 import type { ERDExtractionResult, ERDEntity } from "@/api/services/evaluation-service";
 
 interface ManualRefineStepProps {
@@ -23,12 +25,35 @@ interface ManualRefineStepProps {
 }
 
 const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
-  const { state, setRefinedData } = useWorkflow();
+  const { state, setRefinedData, setLoading, setError } = useWorkflow();
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Hook for sending events to the workflow
+  const sendEvent = useSendEvent({
+    onSuccess: () => {
+      toast.success("Refinements saved! Proceeding to evaluation...");
+      setLoading(false);
+      onNext();
+    },
+    onError: (error) => {
+      console.error("Failed to send refinement event:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save refinements";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setLoading(false);
+    },
+  });
 
   // Use extracted data from workflow state, or fallback to empty structure
   const extractedData = state.extractedData || { entities: [] };
   const refinedData = state.refinedData || extractedData;
+
+  // Initialize refined data with extracted data when component mounts
+  useEffect(() => {
+    if (state.extractedData && !state.refinedData) {
+      setRefinedData(state.extractedData);
+    }
+  }, [state.extractedData, state.refinedData, setRefinedData]);
 
   const handleDataChange = (updatedData: ERDExtractionResult) => {
     setRefinedData(updatedData);
@@ -41,8 +66,31 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   };
 
   const handleSaveRefinements = () => {
-    // Data is already saved in workflow state through handleDataChange
-    onNext();
+    // Check if we have an evaluation ID to send the event to
+    if (!state.evaluationId) {
+      setError("No evaluation ID found. Please restart the workflow.");
+      toast.error("No evaluation ID found. Please restart the workflow.");
+      return;
+    }
+
+    // Check if we have data to send (either refined or extracted)
+    const dataToSend = state.refinedData || state.extractedData;
+    if (!dataToSend || !dataToSend.entities || dataToSend.entities.length === 0) {
+      setError("No data available to save. Please complete the extraction step first.");
+      toast.error("No data available to save. Please complete the extraction step first.");
+      return;
+    }
+
+    setLoading(true);
+
+    // Send the "finish-refinement" event to the workflow with the refined data
+    sendEvent.mutate({
+      id: state.evaluationId,
+      event: "finish-refinement",
+      data: {
+        extractedInformation: dataToSend,
+      },
+    });
   };
 
   const handleAddEntity = () => {

@@ -6,19 +6,7 @@ export interface EvaluationReport {
   questionDescription: string;
   originalData: ERDExtractionResult;
   refinedData: ERDExtractionResult;
-  evaluationResults: {
-    overallScore: number;
-    categories: Array<{
-      name: string;
-      score: number;
-      status: string;
-    }>;
-    issues: Array<{
-      type: string;
-      message: string;
-    }>;
-    recommendations: string[];
-  };
+  evaluationReport: string; // AI-generated evaluation report
 }
 
 // Export evaluation report as JSON
@@ -40,17 +28,20 @@ export const exportAsJSON = (report: EvaluationReport): void => {
 export const exportAsCSV = (report: EvaluationReport): void => {
   const csvContent = [
     // Header
-    "Category,Score,Status",
-    // Data rows
-    ...report.evaluationResults.categories.map(
-      (cat) => `"${cat.name}",${cat.score},"${cat.status}"`,
-    ),
+    "Field,Value",
+    // Basic info
+    `"Report ID","${report.id}"`,
+    `"Timestamp","${report.timestamp}"`,
+    `"Question Description","${report.questionDescription}"`,
     "",
-    "Issues",
-    ...report.evaluationResults.issues.map((issue) => `"${issue.type}","${issue.message}"`),
+    // ERD Data Summary
+    "ERD Data Summary",
+    `"Original Entities Count","${report.originalData.entities.length}"`,
+    `"Refined Entities Count","${report.refinedData.entities.length}"`,
     "",
-    "Recommendations",
-    ...report.evaluationResults.recommendations.map((rec) => `"${rec}"`),
+    // Evaluation Report
+    "AI Evaluation Report",
+    `"${report.evaluationReport.replace(/"/g, '""')}"`, // Escape quotes in CSV
   ].join("\n");
 
   const dataBlob = new Blob([csvContent], { type: "text/csv" });
@@ -69,25 +60,18 @@ export const exportAsPDF = (report: EvaluationReport): void => {
   const content = [
     `ERD Evaluation Report`,
     `Generated: ${new Date(report.timestamp).toLocaleString()}`,
+    `Report ID: ${report.id}`,
     ``,
     `Question: ${report.questionDescription}`,
     ``,
-    `Overall Score: ${report.evaluationResults.overallScore}/100`,
+    `AI Evaluation Report:`,
+    `${report.evaluationReport}`,
     ``,
-    `Category Scores:`,
-    ...report.evaluationResults.categories.map(
-      (cat) => `- ${cat.name}: ${cat.score}/100 (${cat.status})`,
-    ),
+    `ERD Structure Summary:`,
+    `Original Entities: ${report.originalData.entities.length}`,
+    `Refined Entities: ${report.refinedData.entities.length}`,
     ``,
-    `Issues Found:`,
-    ...report.evaluationResults.issues.map(
-      (issue) => `- [${issue.type.toUpperCase()}] ${issue.message}`,
-    ),
-    ``,
-    `Recommendations:`,
-    ...report.evaluationResults.recommendations.map((rec) => `- ${rec}`),
-    ``,
-    `Entities (${report.refinedData.entities.length}):`,
+    `Refined Entities Details:`,
     ...report.refinedData.entities.map((entity) => {
       const attrs = entity.attributes.map((attr) => {
         const flags = [];
@@ -149,5 +133,5 @@ export const clearHistory = (): void => {
 
 // Generate unique ID for reports
 export const generateReportId = (): string => {
-  return `erd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `erd-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 };

@@ -22,14 +22,20 @@ export interface ERDExtractionResult {
   entities: ERDEntity[];
 }
 
+export interface EvaluationWorkflowResult {
+  extractedInformation: ERDExtractionResult;
+  evaluationReport: string;
+}
+
 export interface EvaluationRequest {
   erdImage: string; // URL to the ERD image
+  questionDescription: string; // Description of the evaluation objective
 }
 
 export interface EvaluationWorkflowResponse {
   id: string;
   status: "pending" | "running" | "completed" | "failed";
-  result?: ERDExtractionResult;
+  result?: ERDExtractionResult | EvaluationWorkflowResult;
   error?: string;
   createdAt: string;
   updatedAt: string;
@@ -51,8 +57,8 @@ export interface EvaluationListResponse {
 
 // Mastra API response format
 export interface MastraWorkflowResponse {
-  status: "success" | "failed" | "error" | "running" | "in_progress" | "pending";
-  result?: ERDExtractionResult;
+  status: "success" | "failed" | "error" | "running" | "in_progress" | "pending" | "waiting";
+  result?: ERDExtractionResult | EvaluationWorkflowResult;
   error?: string;
   payload?: Record<string, unknown>;
   steps?: Record<string, unknown>;
@@ -85,18 +91,39 @@ export const evaluationApi = {
 
       // Map Mastra status to our expected status
       let status: "pending" | "running" | "completed" | "failed" = "pending";
+      let result = responseData.result;
+
+      console.log("startEvaluation - Mastra response status:", responseData.status);
+      console.log("startEvaluation - Mastra response result:", responseData.result);
+
       if (responseData.status === "success") {
         status = "completed";
+        // The workflow now returns the evaluation report directly as the result
+        result = responseData.result;
+        console.log("startEvaluation - mapped to completed status with result:", result);
       } else if (responseData.status === "failed" || responseData.status === "error") {
         status = "failed";
       } else if (responseData.status === "running" || responseData.status === "in_progress") {
         status = "running";
+      } else if (responseData.status === "waiting") {
+        // When workflow is waiting, check if we have extraction results in steps
+        status = "completed"; // Mark as completed for extraction step
+        if (responseData.steps && typeof responseData.steps === "object") {
+          const steps = responseData.steps as Record<
+            string,
+            { status: string; output?: ERDExtractionResult }
+          >;
+          const extractStep = steps["erdInformationExtractStep"];
+          if (extractStep && extractStep.status === "success" && extractStep.output) {
+            result = extractStep.output;
+          }
+        }
       }
 
       return {
         id: runId,
         status,
-        result: responseData.result,
+        result,
         error: responseData.error,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -118,18 +145,37 @@ export const evaluationApi = {
 
     // Map Mastra status to our expected status
     let status: "pending" | "running" | "completed" | "failed" = "pending";
+    let result = data.result;
+
+    console.log("getEvaluation - Mastra response status:", data.status);
+    console.log("getEvaluation - Mastra response result:", data.result);
+
     if (data.status === "success") {
       status = "completed";
+      console.log("getEvaluation - mapped to completed status with result:", result);
     } else if (data.status === "failed" || data.status === "error") {
       status = "failed";
     } else if (data.status === "running" || data.status === "in_progress") {
       status = "running";
+    } else if (data.status === "waiting") {
+      // When workflow is waiting, check if we have extraction results in steps
+      status = "completed"; // Mark as completed for extraction step
+      if (data.steps && typeof data.steps === "object") {
+        const steps = data.steps as Record<
+          string,
+          { status: string; output?: ERDExtractionResult }
+        >;
+        const extractStep = steps["erdInformationExtractStep"];
+        if (extractStep && extractStep.status === "success" && extractStep.output) {
+          result = extractStep.output;
+        }
+      }
     }
 
     return {
       id,
       status,
-      result: data.result,
+      result,
       error: data.error,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -147,18 +193,33 @@ export const evaluationApi = {
 
     // Map Mastra status to our expected status
     let status: "pending" | "running" | "completed" | "failed" = "pending";
+    let result = data.result;
+
     if (data.status === "success") {
       status = "completed";
     } else if (data.status === "failed" || data.status === "error") {
       status = "failed";
     } else if (data.status === "running" || data.status === "in_progress") {
       status = "running";
+    } else if (data.status === "waiting") {
+      // When workflow is waiting, check if we have extraction results in steps
+      status = "completed"; // Mark as completed for extraction step
+      if (data.steps && typeof data.steps === "object") {
+        const steps = data.steps as Record<
+          string,
+          { status: string; output?: ERDExtractionResult }
+        >;
+        const extractStep = steps["erdInformationExtractStep"];
+        if (extractStep && extractStep.status === "success" && extractStep.output) {
+          result = extractStep.output;
+        }
+      }
     }
 
     return {
       id,
       status,
-      result: data.result,
+      result,
       error: data.error,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -178,6 +239,15 @@ export const evaluationApi = {
   cancelEvaluation: async (id: string): Promise<void> => {
     const response = await evaluationServiceClient.post(
       `/workflows/evaluationWorkflow/runs/${id}/cancel`,
+    );
+    return response.data;
+  },
+
+  // Send event to workflow run
+  sendEvent: async (id: string, event: string, data?: Record<string, unknown>): Promise<void> => {
+    const response = await evaluationServiceClient.post(
+      `/workflows/evaluationWorkflow/runs/${id}/send-event`,
+      { event, data: data || {} },
     );
     return response.data;
   },
@@ -229,10 +299,43 @@ export const useEvaluation = (id: string, enabled = true) => {
     refetchInterval: (query) => {
       // Only poll if we have data and it's still processing
       const data = query.state.data;
-      if (data && (data.status === "pending" || data.status === "running")) {
-        return 2000; // 2 seconds
+      console.log("useEvaluation - polling check, data:", data);
+
+      if (data) {
+        // Continue polling if status is pending, running, or if we don't have evaluation results yet
+        if (data.status === "pending" || data.status === "running") {
+          console.log("useEvaluation - continuing poll (status:", data.status, ")");
+          return 2000; // 2 seconds
+        }
+
+        // If status is completed, check if we have evaluation report
+        if (data.status === "completed") {
+          console.log("useEvaluation - status is completed, checking result:", data.result);
+
+          if (data.result) {
+            const hasEvaluationReport =
+              typeof data.result === "object" &&
+              data.result !== null &&
+              "evaluationReport" in data.result;
+
+            console.log("useEvaluation - hasEvaluationReport:", hasEvaluationReport);
+
+            if (hasEvaluationReport) {
+              console.log("useEvaluation - stopping poll (completed with evaluation report)");
+              return false; // Stop polling - we have the evaluation report
+            } else {
+              console.log("useEvaluation - continuing poll (completed but no evaluation report)");
+              return 2000; // Keep polling for evaluation report
+            }
+          } else {
+            console.log("useEvaluation - continuing poll (completed but no result)");
+            return 2000; // Keep polling for result
+          }
+        }
       }
-      return false; // Stop polling when completed, failed, or no data
+
+      console.log("useEvaluation - stopping poll");
+      return false; // Stop polling when completed with results, failed, or no data
     },
     staleTime: 0, // Always consider data stale to allow polling
     gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
@@ -261,6 +364,35 @@ export const useCancelEvaluation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.detail(id) });
       // Invalidate evaluation lists
       queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.lists() });
+    },
+  });
+};
+
+export interface UseSendEventOptions {
+  onSuccess?: () => void;
+  onError?: (error: unknown) => void;
+}
+
+export const useSendEvent = ({ onSuccess, onError }: UseSendEventOptions = {}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      event,
+      data,
+    }: {
+      id: string;
+      event: string;
+      data?: Record<string, unknown>;
+    }) => evaluationApi.sendEvent(id, event, data),
+    onSuccess: (_, { id }) => {
+      // Invalidate the specific evaluation to refresh its status
+      queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.detail(id) });
+      onSuccess?.();
+    },
+    onError: (error) => {
+      onError?.(error);
     },
   });
 };

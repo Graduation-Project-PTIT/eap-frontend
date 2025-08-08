@@ -152,7 +152,10 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       toast.info("Starting ERD evaluation...");
 
       // Start evaluation workflow synchronously
-      startEvaluation.mutate({ erdImage: fileUrl });
+      startEvaluation.mutate({
+        erdImage: fileUrl,
+        questionDescription: data.questionDescription,
+      });
 
       // Navigate to extract step after starting evaluation
       onNext();
