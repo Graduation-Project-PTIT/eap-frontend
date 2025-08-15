@@ -27,7 +27,12 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
   // Update workflow state when evaluation completes
   useEffect(() => {
     if (evaluation?.status === "completed" && evaluation.result && !state.extractedData) {
-      setExtractedData(evaluation.result);
+      // Handle both ERDExtractionResult and EvaluationWorkflowResult types
+      const extractedData =
+        "entities" in evaluation.result
+          ? evaluation.result
+          : evaluation.result.extractedInformation;
+      setExtractedData(extractedData);
     }
     if ((evaluation?.status === "failed" || evaluationError) && !state.error) {
       setError(evaluation?.error || "Evaluation failed");
