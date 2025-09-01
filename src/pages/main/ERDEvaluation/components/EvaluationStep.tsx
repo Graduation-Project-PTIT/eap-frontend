@@ -14,7 +14,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import ERDFlowVisualization from "./ERDFlowVisualization";
+import { ERDFlowVisualization } from "@/components/erd";
 import { useEvaluation } from "@/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";

@@ -39,6 +39,7 @@ jobs:
             --build-arg VITE_COGNITO_USER_POOL_ID="${{ secrets.VITE_COGNITO_USER_POOL_ID }}" \
             --build-arg VITE_COGNITO_USER_POOL_CLIENT_ID="${{ secrets.VITE_COGNITO_USER_POOL_CLIENT_ID }}" \
             --build-arg VITE_USER_POOL_DOMAIN="${{ secrets.VITE_USER_POOL_DOMAIN }}" \
+            --build-arg VITE_API_BASE_URL="${{ secrets.VITE_API_BASE_URL }}" \
             -t $FRONTEND_IMAGE .
 
           # Push the image

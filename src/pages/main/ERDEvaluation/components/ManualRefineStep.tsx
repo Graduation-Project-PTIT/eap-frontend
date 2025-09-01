@@ -14,7 +14,7 @@ import {
   Minimize,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import ERDFlowVisualization from "./ERDFlowVisualization";
+import { ERDFlowVisualization } from "@/components/erd";
 import { useSendEvent } from "@/api";
 import { toast } from "@/lib/toast";
 import type { ERDExtractionResult, ERDEntity } from "@/api/services/evaluation-service";
