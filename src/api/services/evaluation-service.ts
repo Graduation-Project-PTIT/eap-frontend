@@ -30,6 +30,7 @@ export interface EvaluationWorkflowResult {
 export interface EvaluationRequest {
   erdImage: string; // URL to the ERD image
   questionDescription: string; // Description of the evaluation objective
+  userToken?: string; // User access token for file authentication
 }
 
 export interface EvaluationWorkflowResponse {
@@ -69,9 +70,17 @@ export const evaluationApi = {
   // Start evaluation workflow synchronously
   startEvaluation: async (data: EvaluationRequest): Promise<EvaluationWorkflowResponse> => {
     try {
+      // Create headers with user token if provided
+      const headers: Record<string, string> = {};
+      if (data.userToken) {
+        headers["X-User-Token"] = data.userToken;
+      }
+
       // First create a run
       const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
         "/workflows/evaluationWorkflow/create-run",
+        {},
+        { headers },
       );
 
       const runId = createRunResponse.data.runId;
@@ -84,6 +93,7 @@ export const evaluationApi = {
       const response = await evaluationServiceClient.post<MastraWorkflowResponse>(
         `/workflows/evaluationWorkflow/start?runId=${runId}`,
         { inputData: data },
+        { headers },
       );
 
       // Transform Mastra response format to our expected format

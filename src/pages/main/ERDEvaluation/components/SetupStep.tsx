@@ -20,6 +20,7 @@ import { setupStepSchema } from "../constants/schemas";
 import { useWorkflow } from "../context/WorkflowContext";
 import { useUploadFile, useStartEvaluation, fileApi } from "@/api";
 import LoadingSpinner from "./LoadingSpinner";
+import { fetchAuthSession } from "aws-amplify/auth";
 import type { z } from "zod";
 
 type SetupStepFormData = z.infer<typeof setupStepSchema>;
@@ -151,10 +152,15 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       toast.success("Setup completed successfully!");
       toast.info("Starting ERD evaluation...");
 
+      // Get user token from auth session
+      const session = await fetchAuthSession();
+      const userToken = session.tokens?.accessToken?.toString();
+
       // Start evaluation workflow synchronously
       startEvaluation.mutate({
         erdImage: fileUrl,
         questionDescription: data.questionDescription,
+        userToken: userToken, // Pass user token
       });
 
       // Navigate to extract step after starting evaluation
