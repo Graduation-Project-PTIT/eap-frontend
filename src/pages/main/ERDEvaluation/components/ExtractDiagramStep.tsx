@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Database, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
 import { useEvaluation } from "@/api";
+import { toast } from "@/lib/toast";
 import ErrorDisplay from "./ErrorDisplay";
 
 interface ExtractDiagramStepProps {
@@ -33,11 +34,23 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
           ? evaluation.result
           : evaluation.result.extractedInformation;
       setExtractedData(extractedData);
+
+      // Show success toast and automatically navigate to the next step (refine)
+      toast.success("Extraction completed successfully!");
+      onNext();
     }
     if ((evaluation?.status === "failed" || evaluationError) && !state.error) {
       setError(evaluation?.error || "Evaluation failed");
     }
-  }, [evaluation, evaluationError, setExtractedData, setError, state.extractedData, state.error]);
+  }, [
+    evaluation,
+    evaluationError,
+    setExtractedData,
+    setError,
+    state.extractedData,
+    state.error,
+    onNext,
+  ]);
 
   const statusDisplay = useMemo(() => {
     if (!evaluation) {
