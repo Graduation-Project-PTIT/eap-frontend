@@ -14,7 +14,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import { ERDFlowVisualization } from "@/components/erd";
+import { ERDTableTabs } from "@/components/erd";
 import { useEvaluation } from "@/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -236,7 +236,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
               <CardTitle>Your Refined ERD Structure</CardTitle>
             </CardHeader>
             <CardContent>
-              <ERDFlowVisualization data={finalData} isEditable={false} />
+              <ERDTableTabs data={finalData} isEditable={false} />
             </CardContent>
           </Card>
         )}
@@ -422,7 +422,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
                 <CardTitle>Final ERD Structure</CardTitle>
               </CardHeader>
               <CardContent>
-                <ERDFlowVisualization data={displayData} isEditable={false} />
+                <ERDTableTabs data={displayData} isEditable={false} />
               </CardContent>
             </Card>
           );
