@@ -65,6 +65,7 @@
     "react-redux": "^9.2.0",
     "react-resizable-panels": "^3.0.3",
     "react-router-dom": "^7.6.2",
+    "reactflow": "^11.11.4",
     "recharts": "^2.15.3",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",

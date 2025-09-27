@@ -27,8 +27,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit3, Key, Link, Type, Database, Plus, Trash2, Save } from "lucide-react";
+import {
+  Edit3,
+  Key,
+  Link,
+  Type,
+  Database,
+  Plus,
+  Trash2,
+  Save,
+  Grid3x3,
+  TableIcon,
+} from "lucide-react";
 import { type ERDExtractionResult, type ERDEntity } from "@/api/services/evaluation-service";
+import ERDDiagramCanvas from "./diagram/ERDDiagramCanvas";
 
 // Define the attribute type based on the ERDEntity interface
 type ERDAttribute = ERDEntity["attributes"][0];
@@ -51,6 +63,8 @@ const getAttributeBadgeVariant = (attribute: ERDAttribute) => {
   return "secondary";
 };
 
+type ViewMode = "table" | "diagram";
+
 interface ERDTableTabsProps {
   data: ERDExtractionResult;
   onDataChange?: (data: ERDExtractionResult) => void;
@@ -65,6 +79,7 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
   className,
 }) => {
   const [activeTab, setActiveTab] = useState<string>(data.entities[0]?.name || "");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   // Update active tab when data changes
   useEffect(() => {
@@ -109,37 +124,86 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
   return (
     <div className={className || "w-full h-[55vh] border rounded-lg bg-background"}>
       <div className="h-full flex flex-col">
-        {/* Tabs */}
-        <div className="flex-1 p-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="flex w-full overflow-x-auto">
-              {data.entities.map((entity) => (
-                <TabsTrigger
-                  key={entity.name}
-                  value={entity.name}
-                  className="flex items-center space-x-2"
-                >
-                  <Database className="h-4 w-4" />
-                  <span>{entity.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {entity.attributes.length}
-                  </Badge>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+        {/* View Toggle Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center space-x-2">
+            <Database className="h-5 w-5 text-blue-600" />
+            <h3 className="font-semibold">ERD Structure</h3>
+            <Badge variant="outline" className="text-xs">
+              {data.entities.length} entities
+            </Badge>
+          </div>
 
-            {data.entities.map((entity) => (
-              <TabsContent key={entity.name} value={entity.name} className="mt-4 h-full">
-                <EntityTable
-                  entity={entity}
-                  isEditable={isEditable}
-                  availableEntities={data.entities.map((e) => e.name)}
-                  onEntityChange={(updatedEntity) => handleEntityChange(entity.name, updatedEntity)}
-                  onEntityDelete={() => handleDeleteEntity(entity.name)}
-                />
-              </TabsContent>
-            ))}
-          </Tabs>
+          <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="h-8 px-3"
+            >
+              <TableIcon className="h-4 w-4 mr-1" />
+              Table
+            </Button>
+            <Button
+              variant={viewMode === "diagram" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("diagram")}
+              className="h-8 px-3"
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" />
+              Diagram
+            </Button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden">
+          {viewMode === "table" ? (
+            <div className="h-full p-4">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+                <TabsList className="flex w-full overflow-x-auto">
+                  {data.entities.map((entity) => (
+                    <TabsTrigger
+                      key={entity.name}
+                      value={entity.name}
+                      className="flex items-center space-x-2"
+                    >
+                      <Database className="h-4 w-4" />
+                      <span>{entity.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {entity.attributes.length}
+                      </Badge>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {data.entities.map((entity) => (
+                  <TabsContent key={entity.name} value={entity.name} className="mt-4 h-full">
+                    <EntityTable
+                      entity={entity}
+                      isEditable={isEditable}
+                      availableEntities={data.entities.map((e) => e.name)}
+                      onEntityChange={(updatedEntity) =>
+                        handleEntityChange(entity.name, updatedEntity)
+                      }
+                      onEntityDelete={() => handleDeleteEntity(entity.name)}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </div>
+          ) : (
+            <ERDDiagramCanvas
+              data={data}
+              onDataChange={onDataChange}
+              isEditable={isEditable}
+              className="w-full h-full"
+              onEntityEdit={(entityName) => {
+                setActiveTab(entityName);
+                setViewMode("table");
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
