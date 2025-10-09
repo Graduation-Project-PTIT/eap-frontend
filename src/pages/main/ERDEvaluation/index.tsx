@@ -40,13 +40,15 @@ const ERDEvaluationContent = () => {
   }
 
   const renderStepContent = () => {
+    const isSyncMode = state.workflowMode === "sync";
+
     switch (state.currentStep) {
       case "setup":
         return <SetupStep onNext={() => handleStepChange("extract")} />;
       case "extract":
         return (
           <ExtractDiagramStep
-            onNext={() => handleStepChange("refine")}
+            onNext={() => handleStepChange(isSyncMode ? "evaluation" : "refine")}
             onBack={() => handleStepChange("setup")}
           />
         );
@@ -58,7 +60,9 @@ const ERDEvaluationContent = () => {
           />
         );
       case "evaluation":
-        return <EvaluationStep onBack={() => handleStepChange("refine")} />;
+        return (
+          <EvaluationStep onBack={() => handleStepChange(isSyncMode ? "extract" : "refine")} />
+        );
       default:
         return <SetupStep onNext={() => handleStepChange("extract")} />;
     }

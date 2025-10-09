@@ -31,6 +31,7 @@ export interface EvaluationRequest {
   erdImage: string; // URL to the ERD image
   questionDescription: string; // Description of the evaluation objective
   userToken?: string; // User access token for file authentication
+  workflowMode?: "standard" | "sync"; // Workflow mode: standard (with refinement) or sync (direct evaluation)
 }
 
 export interface EvaluationWorkflowResponse {
@@ -76,9 +77,13 @@ export const evaluationApi = {
         headers["X-User-Token"] = data.userToken;
       }
 
+      // Determine which workflow to use based on mode
+      const workflowName =
+        data.workflowMode === "sync" ? "evaluationSyncWorkflow" : "evaluationWorkflow";
+
       // First create a run
       const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
-        "/workflows/evaluationWorkflow/create-run",
+        `/workflows/${workflowName}/create-run`,
         {},
         { headers },
       );
@@ -91,7 +96,7 @@ export const evaluationApi = {
 
       // Then start the workflow synchronously
       const response = await evaluationServiceClient.post<MastraWorkflowResponse>(
-        `/workflows/evaluationWorkflow/start?runId=${runId}`,
+        `/workflows/${workflowName}/start?runId=${runId}`,
         { inputData: data },
         { headers },
       );
@@ -145,9 +150,10 @@ export const evaluationApi = {
   },
 
   // Get evaluation workflow status
-  getEvaluation: async (id: string): Promise<EvaluationWorkflowResponse> => {
+  getEvaluation: async (id: string, workflowName?: string): Promise<EvaluationWorkflowResponse> => {
+    const workflow = workflowName || "evaluationWorkflow";
     const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
-      `/workflows/evaluationWorkflow/runs/${id}`,
+      `/workflows/${workflow}/runs/${id}`,
     );
 
     // Transform Mastra response format to our expected format
@@ -193,9 +199,13 @@ export const evaluationApi = {
   },
 
   // Get evaluation execution result
-  getEvaluationResult: async (id: string): Promise<EvaluationWorkflowResponse> => {
+  getEvaluationResult: async (
+    id: string,
+    workflowName?: string,
+  ): Promise<EvaluationWorkflowResponse> => {
+    const workflow = workflowName || "evaluationWorkflow";
     const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
-      `/workflows/evaluationWorkflow/runs/${id}/execution-result`,
+      `/workflows/${workflow}/runs/${id}/execution-result`,
     );
 
     // Transform Mastra response format to our expected format
@@ -254,9 +264,15 @@ export const evaluationApi = {
   },
 
   // Send event to workflow run
-  sendEvent: async (id: string, event: string, data?: Record<string, unknown>): Promise<void> => {
+  sendEvent: async (
+    id: string,
+    event: string,
+    data?: Record<string, unknown>,
+    workflowName?: string,
+  ): Promise<void> => {
+    const workflow = workflowName || "evaluationWorkflow";
     const response = await evaluationServiceClient.post(
-      `/workflows/evaluationWorkflow/runs/${id}/send-event`,
+      `/workflows/${workflow}/runs/${id}/send-event`,
       { event, data: data || {} },
     );
     return response.data;
@@ -293,16 +309,16 @@ export const useEvaluations = (params: EvaluationListParams = {}) => {
   });
 };
 
-export const useEvaluation = (id: string, enabled = true) => {
+export const useEvaluation = (id: string, enabled = true, workflowName?: string) => {
   return useQuery({
     queryKey: queryKeys.evaluations.detail(id),
     queryFn: async () => {
       try {
         // First try to get the execution result
-        return await evaluationApi.getEvaluationResult(id);
+        return await evaluationApi.getEvaluationResult(id, workflowName);
       } catch {
         // If execution result is not available, fall back to run status
-        return await evaluationApi.getEvaluation(id);
+        return await evaluationApi.getEvaluation(id, workflowName);
       }
     },
     enabled: enabled && !!id,
@@ -391,11 +407,13 @@ export const useSendEvent = ({ onSuccess, onError }: UseSendEventOptions = {}) =
       id,
       event,
       data,
+      workflowName,
     }: {
       id: string;
       event: string;
       data?: Record<string, unknown>;
-    }) => evaluationApi.sendEvent(id, event, data),
+      workflowName?: string;
+    }) => evaluationApi.sendEvent(id, event, data, workflowName),
     onSuccess: (_, { id }) => {
       // Invalidate the specific evaluation to refresh its status
       queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.detail(id) });

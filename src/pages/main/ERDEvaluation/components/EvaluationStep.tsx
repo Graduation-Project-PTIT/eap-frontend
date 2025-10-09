@@ -53,6 +53,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   const { data: workflowEvaluation, refetch } = useEvaluation(
     state.evaluationId!,
     !!state.evaluationId,
+    state.workflowName || undefined,
   );
 
   // Force a refetch when component mounts to ensure polling starts

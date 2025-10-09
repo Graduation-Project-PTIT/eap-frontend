@@ -2,6 +2,7 @@ import type { FC } from "react";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "lucide-react";
 import type { WorkflowStep } from "../index";
+import { useWorkflow } from "../context/WorkflowContext";
 
 interface WorkflowStepsProps {
   currentStep: WorkflowStep;
@@ -32,8 +33,14 @@ const steps = [
 ];
 
 const WorkflowSteps: FC<WorkflowStepsProps> = ({ currentStep, onStepClick }) => {
+  const { state } = useWorkflow();
+  const isSyncMode = state.workflowMode === "sync";
+
+  // Filter steps based on workflow mode
+  const visibleSteps = isSyncMode ? steps.filter((step) => step.id !== "refine") : steps;
+
   const getCurrentStepIndex = () => {
-    return steps.findIndex((step) => step.id === currentStep);
+    return visibleSteps.findIndex((step) => step.id === currentStep);
   };
 
   const getStepStatus = (stepIndex: number) => {
@@ -47,7 +54,7 @@ const WorkflowSteps: FC<WorkflowStepsProps> = ({ currentStep, onStepClick }) => 
     <div className="w-full">
       <nav aria-label="Progress">
         <ol className="flex items-center justify-between gap-4">
-          {steps.map((step, stepIndex) => {
+          {visibleSteps.map((step, stepIndex) => {
             const status = getStepStatus(stepIndex);
             const isClickable = stepIndex <= getCurrentStepIndex();
 
@@ -98,7 +105,7 @@ const WorkflowSteps: FC<WorkflowStepsProps> = ({ currentStep, onStepClick }) => 
                   </div>
 
                   {/* Connector Line */}
-                  {stepIndex < steps.length - 1 && (
+                  {stepIndex < visibleSteps.length - 1 && (
                     <div
                       className={cn("h-0.5 w-full flex-1 transition-colors ml-4", {
                         "bg-primary": stepIndex < getCurrentStepIndex(),

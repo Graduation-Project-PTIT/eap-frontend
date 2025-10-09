@@ -23,6 +23,7 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
   const { data: evaluation, error: evaluationError } = useEvaluation(
     state.evaluationId!,
     !!state.evaluationId,
+    state.workflowName || undefined,
   );
 
   // Update workflow state when evaluation completes

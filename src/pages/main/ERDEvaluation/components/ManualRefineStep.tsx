@@ -147,6 +147,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
       data: {
         extractedInformation: dataToSend,
       },
+      workflowName: state.workflowName || undefined,
     });
   };
 

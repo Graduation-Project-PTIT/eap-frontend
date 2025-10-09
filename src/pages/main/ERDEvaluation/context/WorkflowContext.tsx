@@ -5,9 +5,14 @@ import type {
   EvaluationWorkflowResponse,
 } from "@/api/services/evaluation-service";
 
+// Workflow mode type
+export type WorkflowMode = "standard" | "sync";
+
 // Types for workflow state
 export interface WorkflowData {
   currentStep: WorkflowStep;
+  workflowMode: WorkflowMode;
+  workflowName: string | null; // Track which workflow was actually used
   questionDescription: string;
   uploadedFile: File | null;
   fileUrl: string | null;
@@ -22,6 +27,8 @@ export interface WorkflowData {
 // Action types
 export type WorkflowAction =
   | { type: "SET_STEP"; payload: WorkflowStep }
+  | { type: "SET_WORKFLOW_MODE"; payload: WorkflowMode }
+  | { type: "SET_WORKFLOW_NAME"; payload: string }
   | { type: "SET_QUESTION"; payload: string }
   | { type: "SET_FILE"; payload: File }
   | { type: "SET_FILE_URL"; payload: string }
@@ -36,6 +43,8 @@ export type WorkflowAction =
 // Initial state
 const initialState: WorkflowData = {
   currentStep: "setup",
+  workflowMode: "standard",
+  workflowName: null,
   questionDescription: "",
   uploadedFile: null,
   fileUrl: null,
@@ -52,6 +61,10 @@ function workflowReducer(state: WorkflowData, action: WorkflowAction): WorkflowD
   switch (action.type) {
     case "SET_STEP":
       return { ...state, currentStep: action.payload };
+    case "SET_WORKFLOW_MODE":
+      return { ...state, workflowMode: action.payload };
+    case "SET_WORKFLOW_NAME":
+      return { ...state, workflowName: action.payload };
     case "SET_QUESTION":
       return { ...state, questionDescription: action.payload };
     case "SET_FILE":
@@ -83,6 +96,8 @@ interface WorkflowContextType {
   dispatch: React.Dispatch<WorkflowAction>;
   // Helper functions
   setStep: (step: WorkflowStep) => void;
+  setWorkflowMode: (mode: WorkflowMode) => void;
+  setWorkflowName: (name: string) => void;
   setQuestion: (question: string) => void;
   setFile: (file: File) => void;
   setFileUrl: (url: string) => void;
@@ -108,6 +123,9 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
 
   // Helper functions
   const setStep = (step: WorkflowStep) => dispatch({ type: "SET_STEP", payload: step });
+  const setWorkflowMode = (mode: WorkflowMode) =>
+    dispatch({ type: "SET_WORKFLOW_MODE", payload: mode });
+  const setWorkflowName = (name: string) => dispatch({ type: "SET_WORKFLOW_NAME", payload: name });
   const setQuestion = (question: string) => dispatch({ type: "SET_QUESTION", payload: question });
   const setFile = (file: File) => dispatch({ type: "SET_FILE", payload: file });
   const setFileUrl = (url: string) => dispatch({ type: "SET_FILE_URL", payload: url });
@@ -126,6 +144,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     state,
     dispatch,
     setStep,
+    setWorkflowMode,
+    setWorkflowName,
     setQuestion,
     setFile,
     setFileUrl,

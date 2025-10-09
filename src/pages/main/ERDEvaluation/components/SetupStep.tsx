@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Form,
   FormControl,
@@ -14,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "@/lib/toast";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2, Zap, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setupStepSchema } from "../constants/schemas";
 import { useWorkflow } from "../context/WorkflowContext";
@@ -22,6 +23,7 @@ import { useUploadFile, useStartEvaluation, fileApi } from "@/api";
 import LoadingSpinner from "./LoadingSpinner";
 import { fetchAuthSession } from "aws-amplify/auth";
 import type { z } from "zod";
+import type { WorkflowMode } from "../context/WorkflowContext";
 
 type SetupStepFormData = z.infer<typeof setupStepSchema>;
 
@@ -34,8 +36,21 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Workflow context
-  const { state, setQuestion, setFile, setFileUrl, setEvaluationId, setLoading, setError } =
-    useWorkflow();
+  const {
+    state,
+    setQuestion,
+    setFile,
+    setFileUrl,
+    setEvaluationId,
+    setLoading,
+    setError,
+    setWorkflowMode,
+    setWorkflowName,
+  } = useWorkflow();
+
+  const [workflowMode, setWorkflowModeState] = useState<WorkflowMode>(
+    state.workflowMode || "standard",
+  );
 
   // API hooks
   const uploadFile = useUploadFile();
@@ -136,6 +151,12 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       // Save form data to workflow state
       setQuestion(data.questionDescription);
       setFile(data.erdImage);
+      setWorkflowMode(workflowMode);
+
+      // Determine and save workflow name
+      const workflowName =
+        workflowMode === "sync" ? "evaluationSyncWorkflow" : "evaluationWorkflow";
+      setWorkflowName(workflowName);
 
       // Upload file to file service
       toast.info("Uploading ERD image...");
@@ -161,6 +182,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
         erdImage: fileUrl,
         questionDescription: data.questionDescription,
         userToken: userToken, // Pass user token
+        workflowMode: workflowMode, // Pass workflow mode
       });
 
       // Navigate to extract step after starting evaluation
@@ -181,7 +203,54 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       )}
       <Card>
         <CardHeader>
-          <CardTitle>Setup Evaluation Parameters</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Setup Evaluation Parameters</CardTitle>
+            <TooltipProvider>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground mr-2">Mode:</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant={workflowMode === "standard" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setWorkflowModeState("standard")}
+                      className="gap-2"
+                    >
+                      <GitBranch className="h-4 w-4" />
+                      Standard
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      Extract diagram, manually refine the data, then get evaluation results. Allows
+                      you to review and adjust extracted information before evaluation.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant={workflowMode === "sync" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setWorkflowModeState("sync")}
+                      className="gap-2"
+                    >
+                      <Zap className="h-4 w-4" />
+                      Quick
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      Get evaluation results directly without manual refinement. Faster workflow
+                      with automatic evaluation based on extracted data.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <Form {...form}>
