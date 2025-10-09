@@ -277,6 +277,96 @@ export const evaluationApi = {
     );
     return response.data;
   },
+
+  // Translate evaluation report
+  translateEvaluation: async (data: TranslationRequest): Promise<TranslationResponse> => {
+    try {
+      console.log("Starting translation workflow...", {
+        targetLanguage: data.targetLanguage,
+        reportLength: data.evaluationReport.length,
+      });
+
+      // Create a run for translation workflow
+      const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
+        `/workflows/translationWorkflow/create-run`,
+        {},
+      );
+
+      const runId = createRunResponse.data.runId;
+      console.log("Translation run created:", runId);
+
+      if (!runId) {
+        throw new Error("Failed to create translation run - no run ID returned");
+      }
+
+      // Start the translation workflow (async)
+      await evaluationServiceClient.post<{ message: string }>(
+        `/workflows/translationWorkflow/start?runId=${runId}`,
+        { inputData: data },
+      );
+
+      console.log("Translation workflow started, polling for results...");
+
+      // Poll for results (similar to how evaluation workflow works)
+      const maxAttempts = 60; // 60 attempts
+      const pollInterval = 2000; // 2 seconds
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        attempts++;
+
+        // Wait before polling
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+
+        // Get the run status
+        const statusResponse = await evaluationServiceClient.get<{
+          snapshot?: {
+            status?: string;
+            result?: TranslationResponse;
+            context?: { error?: string };
+          };
+        }>(`/workflows/translationWorkflow/runs/${runId}`);
+
+        const runData = statusResponse.data;
+        console.log(`Translation poll attempt ${attempts}:`, {
+          status: runData.snapshot?.status,
+          hasResult: !!runData.snapshot?.result,
+        });
+
+        // Check if completed successfully (status is in snapshot)
+        const status = runData.snapshot?.status;
+        if (status === "success" || status === "completed") {
+          console.log("Translation completed successfully");
+
+          // Extract the result - it's in snapshot.result.translatedReport
+          const result = runData.snapshot?.result;
+          if (result && result.translatedReport) {
+            console.log("Found translatedReport, length:", result.translatedReport.length);
+            return { translatedReport: result.translatedReport };
+          } else {
+            console.error("Translation completed but no translatedReport found:", runData);
+            throw new Error("Translation completed but result is missing");
+          }
+        }
+
+        // Check if failed
+        if (status === "failed" || status === "error") {
+          const errorMsg = runData.snapshot?.context?.error || "Translation failed";
+          console.error("Translation workflow failed:", errorMsg);
+          throw new Error(errorMsg);
+        }
+
+        // Continue polling if still running
+        console.log(`Translation still running, attempt ${attempts}/${maxAttempts}...`);
+      }
+
+      // Timeout
+      throw new Error("Translation timeout - workflow did not complete in time");
+    } catch (error) {
+      console.error("Error translating evaluation:", error);
+      throw error;
+    }
+  },
 };
 
 // React Query Hooks
@@ -444,4 +534,33 @@ export const useInvalidateEvaluations = () => {
   return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.all });
   };
+};
+
+// Translation API
+export interface TranslationRequest {
+  evaluationReport: string;
+  targetLanguage: string;
+}
+
+export interface TranslationResponse {
+  translatedReport: string;
+}
+
+// Hook for translation
+interface UseTranslateEvaluationOptions {
+  onSuccess?: (data: TranslationResponse) => void;
+  onError?: (error: Error) => void;
+}
+
+export const useTranslateEvaluation = ({
+  onSuccess,
+  onError,
+}: UseTranslateEvaluationOptions = {}) => {
+  return useMutation({
+    mutationFn: (data: TranslationRequest) => evaluationApi.translateEvaluation(data),
+    onSuccess,
+    onError: (error) => {
+      onError?.(error as Error);
+    },
+  });
 };

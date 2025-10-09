@@ -20,6 +20,7 @@ export interface WorkflowData {
   extractedData: ERDExtractionResult | null;
   refinedData: ERDExtractionResult | null;
   evaluationResults: EvaluationWorkflowResponse | null;
+  selectedLanguage: string; // Language code (e.g., "en", "vi")
   isLoading: boolean;
   error: string | null;
 }
@@ -36,6 +37,7 @@ export type WorkflowAction =
   | { type: "SET_EXTRACTED_DATA"; payload: ERDExtractionResult }
   | { type: "SET_REFINED_DATA"; payload: ERDExtractionResult }
   | { type: "SET_EVALUATION_RESULTS"; payload: EvaluationWorkflowResponse }
+  | { type: "SET_SELECTED_LANGUAGE"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "RESET_WORKFLOW" };
@@ -52,6 +54,7 @@ const initialState: WorkflowData = {
   extractedData: null,
   refinedData: null,
   evaluationResults: null,
+  selectedLanguage: "en", // Default to English
   isLoading: false,
   error: null,
 };
@@ -79,6 +82,8 @@ function workflowReducer(state: WorkflowData, action: WorkflowAction): WorkflowD
       return { ...state, refinedData: action.payload };
     case "SET_EVALUATION_RESULTS":
       return { ...state, evaluationResults: action.payload };
+    case "SET_SELECTED_LANGUAGE":
+      return { ...state, selectedLanguage: action.payload };
     case "SET_LOADING":
       return { ...state, isLoading: action.payload };
     case "SET_ERROR":
@@ -105,6 +110,7 @@ interface WorkflowContextType {
   setExtractedData: (data: ERDExtractionResult) => void;
   setRefinedData: (data: ERDExtractionResult) => void;
   setEvaluationResults: (results: EvaluationWorkflowResponse) => void;
+  setSelectedLanguage: (language: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   resetWorkflow: () => void;
@@ -136,6 +142,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     dispatch({ type: "SET_REFINED_DATA", payload: data });
   const setEvaluationResults = (results: EvaluationWorkflowResponse) =>
     dispatch({ type: "SET_EVALUATION_RESULTS", payload: results });
+  const setSelectedLanguage = (language: string) =>
+    dispatch({ type: "SET_SELECTED_LANGUAGE", payload: language });
   const setLoading = (loading: boolean) => dispatch({ type: "SET_LOADING", payload: loading });
   const setError = (error: string | null) => dispatch({ type: "SET_ERROR", payload: error });
   const resetWorkflow = () => dispatch({ type: "RESET_WORKFLOW" });
@@ -153,6 +161,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     setExtractedData,
     setRefinedData,
     setEvaluationResults,
+    setSelectedLanguage,
     setLoading,
     setError,
     resetWorkflow,

@@ -12,10 +12,11 @@ import {
   FileText,
   Eye,
   Copy,
+  Languages,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
 import { ERDTableTabs } from "@/components/erd";
-import { useEvaluation } from "@/api";
+import { useEvaluation, useTranslateEvaluation } from "@/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import type { ERDExtractionResult } from "@/api/services/evaluation-service";
+import { getLanguageByCode } from "@/config/languages";
 
 interface EvaluationStepProps {
   onBack: () => void;
@@ -46,6 +48,11 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   // State for toggling between rendered and raw markdown
   const [showRawMarkdown, setShowRawMarkdown] = useState(false);
 
+  // State for translation
+  const [translatedReport, setTranslatedReport] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationAttempted, setTranslationAttempted] = useState(false);
+
   // Use refined data or fallback to extracted data
   const finalData = state.refinedData || state.extractedData;
 
@@ -55,6 +62,43 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
     !!state.evaluationId,
     state.workflowName || undefined,
   );
+
+  // Translation hook
+  const translateEvaluation = useTranslateEvaluation({
+    onSuccess: (data) => {
+      console.log("Translation success, translated text length:", data.translatedReport?.length);
+      if (data.translatedReport) {
+        setTranslatedReport(data.translatedReport);
+        setIsTranslating(false);
+
+        // Now that translation is complete, set the evaluation results
+        if (workflowEvaluation) {
+          setEvaluationResults(workflowEvaluation);
+        }
+
+        // No toast notification - translation is transparent to the user
+      } else {
+        console.error("Translation returned empty result");
+        setIsTranslating(false);
+        // Show English version if translation fails
+        if (workflowEvaluation) {
+          setEvaluationResults(workflowEvaluation);
+        }
+        // Silent fallback to English - no error shown to user
+        console.warn("Falling back to English version");
+      }
+    },
+    onError: (error) => {
+      console.error("Translation error:", error);
+      setIsTranslating(false);
+      // Show English version if translation fails
+      if (workflowEvaluation) {
+        setEvaluationResults(workflowEvaluation);
+      }
+      // Silent fallback to English - no error shown to user
+      console.warn("Translation failed, falling back to English version");
+    },
+  });
 
   // Force a refetch when component mounts to ensure polling starts
   useEffect(() => {
@@ -83,10 +127,58 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
         state.evaluationResults.id !== workflowEvaluation.id ||
         (hasEvaluationReport && !stateHasEvaluationReport)
       ) {
-        setEvaluationResults(workflowEvaluation);
+        // Only set results immediately if language is English OR translation is already done
+        if (state.selectedLanguage === "en" || translatedReport) {
+          setEvaluationResults(workflowEvaluation);
+        }
+        // If language is not English and no translation yet, wait for translation
+        // (results will be set after translation completes)
       }
     }
-  }, [workflowEvaluation, setEvaluationResults, state.evaluationResults]);
+  }, [
+    workflowEvaluation,
+    setEvaluationResults,
+    state.evaluationResults,
+    state.selectedLanguage,
+    translatedReport,
+  ]);
+
+  // Automatic translation when evaluation completes and language is not English
+  useEffect(() => {
+    if (
+      workflowEvaluation?.status === "completed" &&
+      workflowEvaluation.result &&
+      typeof workflowEvaluation.result === "object" &&
+      "evaluationReport" in workflowEvaluation.result &&
+      state.selectedLanguage !== "en" &&
+      !translationAttempted &&
+      !isTranslating &&
+      !translatedReport // Don't translate if we already have a translation
+    ) {
+      const evaluationReport = (workflowEvaluation.result as { evaluationReport: string })
+        .evaluationReport;
+
+      setIsTranslating(true);
+      setTranslationAttempted(true);
+
+      const language = getLanguageByCode(state.selectedLanguage);
+      console.log(`Auto-translating evaluation report to ${language.nativeName}...`);
+      console.log("Evaluation report length:", evaluationReport?.length);
+      console.log("First 100 chars:", evaluationReport?.substring(0, 100));
+
+      translateEvaluation.mutate({
+        evaluationReport,
+        targetLanguage: language.nativeName,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    workflowEvaluation?.status,
+    workflowEvaluation?.id,
+    state.selectedLanguage,
+    translationAttempted,
+    translatedReport,
+  ]);
 
   // Check if we have actual evaluation results from the workflow
   // Check both state.evaluationResults AND workflowEvaluation directly
@@ -154,6 +246,11 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       }
     }
 
+    // Use translated report if available
+    if (translatedReport) {
+      evaluationReportText = translatedReport;
+    }
+
     return {
       id: generateReportId(),
       timestamp: new Date().toISOString(),
@@ -208,8 +305,9 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
     }
   };
 
-  // Show loading state while waiting for evaluation results
-  if (isLoading) {
+  // Show loading state while waiting for evaluation results OR translation
+  // Keep the same message for both to make translation transparent
+  if (isLoading || (isTranslating && !state.evaluationResults)) {
     return (
       <div className="space-y-6">
         <Card>
@@ -265,6 +363,12 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               AI Evaluation Report
+              {state.selectedLanguage !== "en" && (
+                <span className="text-sm font-normal text-muted-foreground flex items-center gap-1">
+                  <Languages className="h-4 w-4" />
+                  {getLanguageByCode(state.selectedLanguage).nativeName}
+                </span>
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Label
@@ -305,17 +409,22 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
                 let evaluationReport = "";
 
-                // New format: { extractedInformation, evaluationReport }
-                if ("evaluationReport" in result && "extractedInformation" in result) {
-                  evaluationReport = (result as { evaluationReport: string }).evaluationReport;
-                }
-                // Legacy format: { evaluationReport }
-                else if ("evaluationReport" in result) {
-                  evaluationReport = String(
-                    (result as { evaluationReport: string }).evaluationReport,
-                  );
+                // Use translated report if available, otherwise use original
+                if (translatedReport) {
+                  evaluationReport = translatedReport;
                 } else {
-                  return <p className="text-muted-foreground">Evaluation report not available</p>;
+                  // New format: { extractedInformation, evaluationReport }
+                  if ("evaluationReport" in result && "extractedInformation" in result) {
+                    evaluationReport = (result as { evaluationReport: string }).evaluationReport;
+                  }
+                  // Legacy format: { evaluationReport }
+                  else if ("evaluationReport" in result) {
+                    evaluationReport = String(
+                      (result as { evaluationReport: string }).evaluationReport,
+                    );
+                  } else {
+                    return <p className="text-muted-foreground">Evaluation report not available</p>;
+                  }
                 }
 
                 // Show raw markdown or rendered version based on toggle

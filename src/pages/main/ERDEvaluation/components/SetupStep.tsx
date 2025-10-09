@@ -14,8 +14,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { Upload, X, Image as ImageIcon, Loader2, Zap, GitBranch } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2, Zap, GitBranch, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setupStepSchema } from "../constants/schemas";
 import { useWorkflow } from "../context/WorkflowContext";
@@ -24,6 +31,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { fetchAuthSession } from "aws-amplify/auth";
 import type { z } from "zod";
 import type { WorkflowMode } from "../context/WorkflowContext";
+import { LANGUAGES } from "@/config/languages";
 
 type SetupStepFormData = z.infer<typeof setupStepSchema>;
 
@@ -46,6 +54,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
     setError,
     setWorkflowMode,
     setWorkflowName,
+    setSelectedLanguage,
   } = useWorkflow();
 
   const [workflowMode, setWorkflowModeState] = useState<WorkflowMode>(
@@ -203,58 +212,98 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       )}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Setup Evaluation Parameters</CardTitle>
-            <TooltipProvider>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground mr-2">Mode:</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant={workflowMode === "standard" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setWorkflowModeState("standard")}
-                      className="gap-2"
-                    >
-                      <GitBranch className="h-4 w-4" />
-                      Standard
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">
-                      Extract diagram, manually refine the data, then get evaluation results. Allows
-                      you to review and adjust extracted information before evaluation.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant={workflowMode === "sync" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setWorkflowModeState("sync")}
-                      className="gap-2"
-                    >
-                      <Zap className="h-4 w-4" />
-                      Quick
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">
-                      Get evaluation results directly without manual refinement. Faster workflow
-                      with automatic evaluation based on extracted data.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-          </div>
+          <CardTitle>Setup Evaluation Parameters</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Configuration Section */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Evaluation Mode */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none">Evaluation Mode</label>
+                    <TooltipProvider>
+                      <div className="flex items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant={workflowMode === "standard" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setWorkflowModeState("standard")}
+                              className="gap-2 flex-1"
+                            >
+                              <GitBranch className="h-4 w-4" />
+                              Standard
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">
+                              Extract diagram, manually refine the data, then get evaluation
+                              results. Allows you to review and adjust extracted information before
+                              evaluation.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant={workflowMode === "sync" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setWorkflowModeState("sync")}
+                              className="gap-2 flex-1"
+                            >
+                              <Zap className="h-4 w-4" />
+                              Quick
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">
+                              Get evaluation results directly without manual refinement. Faster
+                              workflow with automatic evaluation based on extracted data.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
+                    <p className="text-xs text-muted-foreground">
+                      Choose between standard workflow with refinement or quick direct evaluation.
+                    </p>
+                  </div>
+
+                  {/* Language Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none">Report Language</label>
+                    <Select
+                      value={state.selectedLanguage}
+                      onValueChange={(value) => setSelectedLanguage(value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <div className="flex items-center gap-2">
+                          <Languages className="h-4 w-4" />
+                          <SelectValue placeholder="Select language" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>
+                            <div className="flex items-center gap-2">
+                              <span>{lang.flag}</span>
+                              <span>{lang.nativeName}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Select the language for your evaluation report.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Question Description */}
               <FormField
                 control={form.control}
