@@ -91,15 +91,17 @@ const ERDEvaluationContent = () => {
             </Button>
           </div>
 
-          {/* Workflow Steps */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Evaluation Workflow</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WorkflowSteps currentStep={state.currentStep} onStepClick={handleStepChange} />
-            </CardContent>
-          </Card>
+          {/* Workflow Steps - Only show after setup step */}
+          {state.currentStep !== "setup" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Evaluation Workflow</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WorkflowSteps currentStep={state.currentStep} onStepClick={handleStepChange} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Step Content */}
           <div className="min-h-[600px]">{renderStepContent()}</div>
