@@ -15,7 +15,7 @@ import {
   Undo,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import { ERDTableTabs } from "@/components/erd";
+import { ERDFormatTabs } from "@/components/erd";
 import { useSendEvent } from "@/api";
 import { toast } from "@/lib/toast";
 import type { ERDExtractionResult, ERDEntity } from "@/api/services/evaluation-service";
@@ -52,7 +52,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   });
 
   // Use extracted data from workflow state, or fallback to empty structure
-  const extractedData = state.extractedData || { entities: [] };
+  const extractedData = state.extractedData || { entities: [], ddlScript: "", mermaidDiagram: "" };
   const refinedData = state.refinedData || extractedData;
 
   // Initialize refined data with extracted data when component mounts
@@ -141,6 +141,8 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
     setLoading(true);
 
     // Send the "finish-refinement" event to the workflow with the refined data
+    // Note: dataToSend includes all three formats (entities, ddlScript, mermaidDiagram)
+    // Only the entities (JSON format) can be edited; DDL and Mermaid are read-only from original extraction
     sendEvent.mutate({
       id: state.evaluationId,
       event: "finish-refinement",
@@ -168,6 +170,8 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
 
     const updatedData = {
       entities: [...refinedData.entities, newEntity],
+      ddlScript: refinedData.ddlScript,
+      mermaidDiagram: refinedData.mermaidDiagram,
     };
     setRefinedData(updatedData);
   };
@@ -249,14 +253,15 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
             </div>
           </div>
 
-          {/* Fullscreen ERD Table Tabs */}
+          {/* Fullscreen ERD Format Tabs */}
           <div className="flex-1 p-4">
             {refinedData.entities.length > 0 ? (
-              <ERDTableTabs
+              <ERDFormatTabs
                 data={refinedData}
                 onDataChange={handleDataChange}
                 isEditable={true}
-                className="w-full h-full border rounded-lg bg-background"
+                className="w-full h-full"
+                preferredFormat={state.preferredFormat}
               />
             ) : (
               <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
@@ -339,13 +344,14 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
         </Badge>
       </div>
 
-      {/* ERD Table Tabs */}
+      {/* ERD Format Tabs */}
       {refinedData.entities.length > 0 ? (
-        <ERDTableTabs
+        <ERDFormatTabs
           data={refinedData}
           onDataChange={handleDataChange}
           isEditable={true}
-          className="w-full h-[60vh] border rounded-lg bg-background"
+          className="w-full h-[60vh]"
+          preferredFormat={state.preferredFormat}
         />
       ) : (
         <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">

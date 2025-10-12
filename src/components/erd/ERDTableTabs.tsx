@@ -91,14 +91,22 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
   const handleEntityChange = (entityName: string, updatedEntity: ERDEntity) => {
     if (onDataChange) {
       const updatedEntities = data.entities.map((e) => (e.name === entityName ? updatedEntity : e));
-      onDataChange({ entities: updatedEntities });
+      onDataChange({
+        entities: updatedEntities,
+        ddlScript: data.ddlScript,
+        mermaidDiagram: data.mermaidDiagram,
+      });
     }
   };
 
   const handleDeleteEntity = (entityName: string) => {
     if (onDataChange) {
       const updatedEntities = data.entities.filter((e) => e.name !== entityName);
-      onDataChange({ entities: updatedEntities });
+      onDataChange({
+        entities: updatedEntities,
+        ddlScript: data.ddlScript,
+        mermaidDiagram: data.mermaidDiagram,
+      });
 
       // Switch to first available tab
       if (activeTab === entityName && updatedEntities.length > 0) {

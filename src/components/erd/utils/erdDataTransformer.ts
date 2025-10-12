@@ -80,7 +80,11 @@ export function transformToReactFlow(data: ERDExtractionResult): {
  */
 export function transformFromReactFlow(nodes: ERDNode[]): ERDExtractionResult {
   const entities: ERDEntity[] = nodes.map((node) => node.data.entity);
-  return { entities };
+  return {
+    entities,
+    ddlScript: "",
+    mermaidDiagram: "",
+  };
 }
 
 /**

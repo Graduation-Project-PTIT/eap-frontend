@@ -136,7 +136,12 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
               {/* Extracted Data Preview */}
               {isCompleted && state.extractedData && (
                 <div className="mt-8 space-y-4">
-                  <h4 className="font-medium text-left">Extracted Elements:</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-left">Extracted Elements:</h4>
+                    <Badge variant="outline" className="text-xs">
+                      All formats extracted ✓ (JSON, DDL, Mermaid)
+                    </Badge>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="border rounded-lg p-4">
                       <h5 className="font-medium mb-2">Entities</h5>

@@ -19,7 +19,14 @@ export interface ERDEntity {
 }
 
 export interface ERDExtractionResult {
+  // JSON format - structured data
   entities: ERDEntity[];
+
+  // DDL format - PostgreSQL script
+  ddlScript: string;
+
+  // Mermaid format - Mermaid ERD diagram syntax
+  mermaidDiagram: string;
 }
 
 export interface EvaluationWorkflowResult {
@@ -32,6 +39,7 @@ export interface EvaluationRequest {
   questionDescription: string; // Description of the evaluation objective
   userToken?: string; // User access token for file authentication
   workflowMode?: "standard" | "sync"; // Workflow mode: standard (with refinement) or sync (direct evaluation)
+  preferredFormat?: "json" | "ddl" | "mermaid"; // Format for evaluation (default: json)
 }
 
 export interface EvaluationWorkflowResponse {

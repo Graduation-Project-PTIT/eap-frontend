@@ -116,7 +116,11 @@ const ERDDiagramCanvasContent: React.FC<ERDDiagramCanvasProps> = ({
         e.name === editingEntity?.name ? updatedEntity : e,
       );
 
-      onDataChange({ entities: updatedEntities });
+      onDataChange({
+        entities: updatedEntities,
+        ddlScript: data.ddlScript,
+        mermaidDiagram: data.mermaidDiagram,
+      });
 
       // Update the node in the diagram
       setNodes((nds) =>
@@ -147,7 +151,11 @@ const ERDDiagramCanvasContent: React.FC<ERDDiagramCanvasProps> = ({
     };
 
     const updatedEntities = [...data.entities, newEntity];
-    onDataChange({ entities: updatedEntities });
+    onDataChange({
+      entities: updatedEntities,
+      ddlScript: data.ddlScript,
+      mermaidDiagram: data.mermaidDiagram,
+    });
 
     // Add the node to the diagram
     setNodes((nds) => addEntityNode(nds as ERDNode[], newEntity));

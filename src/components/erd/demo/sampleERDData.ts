@@ -240,4 +240,6 @@ export const sampleERDData: ERDExtractionResult = {
       ],
     },
   ],
+  ddlScript: "",
+  mermaidDiagram: "",
 };

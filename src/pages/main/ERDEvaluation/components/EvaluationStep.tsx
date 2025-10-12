@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   CheckCircle,
@@ -15,7 +16,7 @@ import {
   Languages,
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import { ERDTableTabs } from "@/components/erd";
+import { ERDTableTabs, ERDFormatTabs } from "@/components/erd";
 import { useEvaluation, useTranslateEvaluation } from "@/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -223,7 +224,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   const createReport = (): EvaluationReport => {
     // Extract the evaluation report from the workflow results
     let evaluationReportText = "Evaluation report not available";
-    let finalEvaluatedData = finalData || { entities: [] };
+    let finalEvaluatedData = finalData || { entities: [], ddlScript: "", mermaidDiagram: "" };
 
     // Try to get result from polling data first (most up-to-date), then from state
     let result = workflowEvaluation?.result;
@@ -255,7 +256,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       id: generateReportId(),
       timestamp: new Date().toISOString(),
       questionDescription: state.questionDescription,
-      originalData: state.extractedData || { entities: [] },
+      originalData: state.extractedData || { entities: [], ddlScript: "", mermaidDiagram: "" },
       refinedData: finalEvaluatedData,
       evaluationReport: evaluationReportText,
     };
@@ -363,6 +364,9 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               AI Evaluation Report
+              <Badge variant="secondary" className="text-xs">
+                Evaluated using: {state.preferredFormat.toUpperCase()}
+              </Badge>
               {state.selectedLanguage !== "en" && (
                 <span className="text-sm font-normal text-muted-foreground flex items-center gap-1">
                   <Languages className="h-4 w-4" />
@@ -532,7 +536,12 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
                 <CardTitle>Final ERD Structure</CardTitle>
               </CardHeader>
               <CardContent>
-                <ERDTableTabs data={displayData} isEditable={false} />
+                <ERDFormatTabs
+                  data={displayData}
+                  isEditable={false}
+                  preferredFormat={state.preferredFormat}
+                  className="h-[60vh]"
+                />
               </CardContent>
             </Card>
           );

@@ -8,11 +8,15 @@ import type {
 // Workflow mode type
 export type WorkflowMode = "standard" | "sync";
 
+// Preferred format type
+export type PreferredFormat = "json" | "ddl" | "mermaid";
+
 // Types for workflow state
 export interface WorkflowData {
   currentStep: WorkflowStep;
   workflowMode: WorkflowMode;
   workflowName: string | null; // Track which workflow was actually used
+  preferredFormat: PreferredFormat; // Format for evaluation
   questionDescription: string;
   uploadedFile: File | null;
   fileUrl: string | null;
@@ -30,6 +34,7 @@ export type WorkflowAction =
   | { type: "SET_STEP"; payload: WorkflowStep }
   | { type: "SET_WORKFLOW_MODE"; payload: WorkflowMode }
   | { type: "SET_WORKFLOW_NAME"; payload: string }
+  | { type: "SET_PREFERRED_FORMAT"; payload: PreferredFormat }
   | { type: "SET_QUESTION"; payload: string }
   | { type: "SET_FILE"; payload: File }
   | { type: "SET_FILE_URL"; payload: string }
@@ -47,6 +52,7 @@ const initialState: WorkflowData = {
   currentStep: "setup",
   workflowMode: "standard",
   workflowName: null,
+  preferredFormat: "json", // Default to JSON
   questionDescription: "",
   uploadedFile: null,
   fileUrl: null,
@@ -68,6 +74,8 @@ function workflowReducer(state: WorkflowData, action: WorkflowAction): WorkflowD
       return { ...state, workflowMode: action.payload };
     case "SET_WORKFLOW_NAME":
       return { ...state, workflowName: action.payload };
+    case "SET_PREFERRED_FORMAT":
+      return { ...state, preferredFormat: action.payload };
     case "SET_QUESTION":
       return { ...state, questionDescription: action.payload };
     case "SET_FILE":
@@ -103,6 +111,7 @@ interface WorkflowContextType {
   setStep: (step: WorkflowStep) => void;
   setWorkflowMode: (mode: WorkflowMode) => void;
   setWorkflowName: (name: string) => void;
+  setPreferredFormat: (format: PreferredFormat) => void;
   setQuestion: (question: string) => void;
   setFile: (file: File) => void;
   setFileUrl: (url: string) => void;
@@ -132,6 +141,8 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
   const setWorkflowMode = (mode: WorkflowMode) =>
     dispatch({ type: "SET_WORKFLOW_MODE", payload: mode });
   const setWorkflowName = (name: string) => dispatch({ type: "SET_WORKFLOW_NAME", payload: name });
+  const setPreferredFormat = (format: PreferredFormat) =>
+    dispatch({ type: "SET_PREFERRED_FORMAT", payload: format });
   const setQuestion = (question: string) => dispatch({ type: "SET_QUESTION", payload: question });
   const setFile = (file: File) => dispatch({ type: "SET_FILE", payload: file });
   const setFileUrl = (url: string) => dispatch({ type: "SET_FILE_URL", payload: url });
@@ -154,6 +165,7 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
     setStep,
     setWorkflowMode,
     setWorkflowName,
+    setPreferredFormat,
     setQuestion,
     setFile,
     setFileUrl,
