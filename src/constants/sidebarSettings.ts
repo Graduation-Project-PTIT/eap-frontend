@@ -1,4 +1,4 @@
-import { Home, Database, FileText, BarChart3 } from "lucide-react";
+import { Home, Database, FileText, BarChart3, Layers } from "lucide-react";
 import ROUTES from "./routes";
 
 const sidebarSettings = [
@@ -16,6 +16,11 @@ const sidebarSettings = [
     title: "ERD Evaluation",
     url: ROUTES.ERD_EVALUATION,
     icon: BarChart3,
+  },
+  {
+    title: "Mass Evaluation",
+    url: ROUTES.MASS_EVALUATION.ROOT,
+    icon: Layers,
   },
   {
     title: "Documentation",

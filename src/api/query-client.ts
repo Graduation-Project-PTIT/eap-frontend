@@ -99,6 +99,19 @@ export const queryKeys = {
     results: () => [...queryKeys.evaluations.all, "results"] as const,
     result: (id: string) => [...queryKeys.evaluations.results(), id] as const,
   },
+
+  // Mass evaluation queries
+  massEvaluation: {
+    all: ["mass-evaluation"] as const,
+    batches: () => [...queryKeys.massEvaluation.all, "batches"] as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    batchList: (filters: Record<string, any>) =>
+      [...queryKeys.massEvaluation.batches(), { filters }] as const,
+    batchDetails: () => [...queryKeys.massEvaluation.all, "batch-detail"] as const,
+    batchDetail: (id: string) => [...queryKeys.massEvaluation.batchDetails(), id] as const,
+    tasks: (batchId: string) => [...queryKeys.massEvaluation.all, "tasks", batchId] as const,
+    stats: () => [...queryKeys.massEvaluation.all, "stats"] as const,
+  },
 } as const;
 
 // Utility functions for cache management

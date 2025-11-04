@@ -7,6 +7,8 @@ import NotFound from "./pages/fallback/NotFound";
 import Dashboard from "./pages/main/Dashboard";
 import ERDDesigner from "./pages/main/ERDDesigner";
 import ERDEvaluation from "./pages/main/ERDEvaluation";
+import MassEvaluationList from "./pages/main/MassEvaluation";
+import BatchDetail from "./pages/main/MassEvaluation/BatchDetail";
 import Documentation from "./pages/main/Documentation";
 import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
@@ -40,6 +42,14 @@ const mainRoutes = {
     {
       path: ROUTES.ERD_EVALUATION,
       element: <ERDEvaluation />,
+    },
+    {
+      path: ROUTES.MASS_EVALUATION.ROOT,
+      element: <MassEvaluationList />,
+    },
+    {
+      path: ROUTES.MASS_EVALUATION.DETAIL,
+      element: <BatchDetail />,
     },
     {
       path: ROUTES.DOCUMENTATION,

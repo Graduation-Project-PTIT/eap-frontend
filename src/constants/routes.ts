@@ -8,6 +8,10 @@ const ROUTES = {
   DASHBOARD: "/",
   ERD_DESIGNER: "/erd-designer",
   ERD_EVALUATION: "/erd-evaluation",
+  MASS_EVALUATION: {
+    ROOT: "/mass-evaluation",
+    DETAIL: "/mass-evaluation/:batchId",
+  },
   DOCUMENTATION: "/docs",
   SETTINGS: "/settings",
 
