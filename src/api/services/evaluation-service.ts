@@ -250,28 +250,16 @@ export const evaluationApi = {
   translateEvaluation: async (data: TranslationRequest): Promise<TranslationResponse> => {
     try {
       console.log("Starting translation workflow...", {
+        evaluationId: data.evaluationId,
         targetLanguage: data.targetLanguage,
         reportLength: data.evaluationReport.length,
       });
 
-      // Create a run for translation workflow
-      const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
-        `/workflows/translationWorkflow/create-run`,
-        {},
-      );
-
-      const runId = createRunResponse.data.runId;
-      console.log("Translation run created:", runId);
-
-      if (!runId) {
-        throw new Error("Failed to create translation run - no run ID returned");
-      }
-
-      // Start the translation workflow (async)
-      await evaluationServiceClient.post<{ message: string }>(
-        `/workflows/translationWorkflow/start?runId=${runId}`,
-        { inputData: data },
-      );
+      // Start translation using custom route
+      await evaluationServiceClient.post(`/${data.evaluationId}/translation`, {
+        evaluationReport: data.evaluationReport,
+        targetLanguage: data.targetLanguage,
+      });
 
       console.log("Translation workflow started, polling for results...");
 
@@ -286,46 +274,67 @@ export const evaluationApi = {
         // Wait before polling
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
-        // Get the run status
+        // Get the run status - response structure is at root level, not in snapshot
         const statusResponse = await evaluationServiceClient.get<{
-          snapshot?: {
-            status?: string;
-            result?: TranslationResponse;
-            context?: { error?: string };
+          status?: string;
+          result?: {
+            translatedReport?: string;
           };
-        }>(`/workflows/translationWorkflow/runs/${runId}`);
+          payload?: {
+            evaluationReport?: string;
+            targetLanguage?: string;
+          };
+          steps?: Record<string, unknown>;
+        }>(`/${data.evaluationId}/translation/result`);
 
         const runData = statusResponse.data;
+
+        // Log the full response structure for debugging
         console.log(`Translation poll attempt ${attempts}:`, {
-          status: runData.snapshot?.status,
-          hasResult: !!runData.snapshot?.result,
+          status: runData.status,
+          hasResult: !!runData.result,
+          hasTranslatedReport: !!runData.result?.translatedReport,
+          translatedReportLength: runData.result?.translatedReport?.length || 0,
         });
 
-        // Check if completed successfully (status is in snapshot)
-        const status = runData.snapshot?.status;
+        // Check if completed successfully - status is at root level
+        const status = runData.status;
         if (status === "success" || status === "completed") {
-          console.log("Translation completed successfully");
+          console.log("Translation completed successfully, full response:", runData);
 
-          // Extract the result - it's in snapshot.result.translatedReport
-          const result = runData.snapshot?.result;
+          // Extract the result - it's at root level in result.translatedReport
+          const result = runData.result;
           if (result && result.translatedReport) {
             console.log("Found translatedReport, length:", result.translatedReport.length);
+            console.log(
+              "First 100 chars of translation:",
+              result.translatedReport.substring(0, 100),
+            );
             return { translatedReport: result.translatedReport };
           } else {
-            console.error("Translation completed but no translatedReport found:", runData);
+            console.error("Translation completed but no translatedReport found in result:", {
+              hasResult: !!result,
+              resultKeys: result ? Object.keys(result) : [],
+              fullResponse: runData,
+            });
             throw new Error("Translation completed but result is missing");
           }
         }
 
         // Check if failed
         if (status === "failed" || status === "error") {
-          const errorMsg = runData.snapshot?.context?.error || "Translation failed";
-          console.error("Translation workflow failed:", errorMsg);
+          const errorMsg = "Translation failed";
+          console.error("Translation workflow failed:", {
+            status,
+            fullResponse: runData,
+          });
           throw new Error(errorMsg);
         }
 
         // Continue polling if still running
-        console.log(`Translation still running, attempt ${attempts}/${maxAttempts}...`);
+        console.log(
+          `Translation still running (status: ${status}), attempt ${attempts}/${maxAttempts}...`,
+        );
       }
 
       // Timeout
@@ -504,6 +513,7 @@ export const useInvalidateEvaluations = () => {
 
 // Translation API
 export interface TranslationRequest {
+  evaluationId: string;
   evaluationReport: string;
   targetLanguage: string;
 }

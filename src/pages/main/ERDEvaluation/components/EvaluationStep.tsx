@@ -66,22 +66,34 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   // Translation hook
   const translateEvaluation = useTranslateEvaluation({
     onSuccess: (data) => {
-      console.log("Translation success, translated text length:", data.translatedReport?.length);
+      console.log("=== Translation Success Callback ===");
+      console.log("Translation success, data:", {
+        hasTranslatedReport: !!data.translatedReport,
+        translatedReportLength: data.translatedReport?.length,
+        first100Chars: data.translatedReport?.substring(0, 100),
+      });
+
       if (data.translatedReport) {
+        console.log("Setting translated report and updating state...");
         setTranslatedReport(data.translatedReport);
         setIsTranslating(false);
 
         // Now that translation is complete, set the evaluation results
         if (workflowEvaluation) {
+          console.log("Setting evaluation results after translation");
           setEvaluationResults(workflowEvaluation);
+        } else {
+          console.warn("workflowEvaluation is not available after translation");
         }
 
+        console.log("Translation complete - UI should update now");
         // No toast notification - translation is transparent to the user
       } else {
-        console.error("Translation returned empty result");
+        console.error("Translation returned empty result, data:", data);
         setIsTranslating(false);
         // Show English version if translation fails
         if (workflowEvaluation) {
+          console.log("Falling back to English version");
           setEvaluationResults(workflowEvaluation);
         }
         // Silent fallback to English - no error shown to user
@@ -89,10 +101,12 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       }
     },
     onError: (error) => {
+      console.error("=== Translation Error Callback ===");
       console.error("Translation error:", error);
       setIsTranslating(false);
       // Show English version if translation fails
       if (workflowEvaluation) {
+        console.log("Falling back to English version due to error");
         setEvaluationResults(workflowEvaluation);
       }
       // Silent fallback to English - no error shown to user
@@ -145,12 +159,27 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
   // Automatic translation when evaluation completes and language is not English
   useEffect(() => {
+    console.log("=== Translation Trigger Check ===", {
+      workflowStatus: workflowEvaluation?.status,
+      hasResult: !!workflowEvaluation?.result,
+      hasEvaluationReport:
+        workflowEvaluation?.result &&
+        typeof workflowEvaluation.result === "object" &&
+        "evaluationReport" in workflowEvaluation.result,
+      selectedLanguage: state.selectedLanguage,
+      hasEvaluationId: !!state.evaluationId,
+      translationAttempted,
+      isTranslating,
+      hasTranslatedReport: !!translatedReport,
+    });
+
     if (
       workflowEvaluation?.status === "completed" &&
       workflowEvaluation.result &&
       typeof workflowEvaluation.result === "object" &&
       "evaluationReport" in workflowEvaluation.result &&
       state.selectedLanguage !== "en" &&
+      state.evaluationId &&
       !translationAttempted &&
       !isTranslating &&
       !translatedReport // Don't translate if we already have a translation
@@ -158,6 +187,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       const evaluationReport = (workflowEvaluation.result as { evaluationReport: string })
         .evaluationReport;
 
+      console.log("=== Starting Translation ===");
       setIsTranslating(true);
       setTranslationAttempted(true);
 
@@ -167,6 +197,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       console.log("First 100 chars:", evaluationReport?.substring(0, 100));
 
       translateEvaluation.mutate({
+        evaluationId: state.evaluationId,
         evaluationReport,
         targetLanguage: language.nativeName,
       });
@@ -307,7 +338,15 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
   // Show loading state while waiting for evaluation results OR translation
   // Keep the same message for both to make translation transparent
+  console.log("=== Loading State Check ===", {
+    isLoading,
+    isTranslating,
+    hasEvaluationResults: !!state.evaluationResults,
+    shouldShowLoading: isLoading || (isTranslating && !state.evaluationResults),
+  });
+
   if (isLoading || (isTranslating && !state.evaluationResults)) {
+    console.log("Showing loading screen...");
     return (
       <div className="space-y-6">
         <Card>
