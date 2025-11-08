@@ -42,9 +42,26 @@ export interface EvaluationRequest {
   preferredFormat?: "json" | "ddl" | "mermaid"; // Format for evaluation (default: json)
 }
 
+// Database evaluation record type from backend
+export interface EvaluationRecord {
+  id: string;
+  userId: string;
+  questionDescription: string;
+  erdImageUrl: string;
+  extractedInformation?: ERDExtractionResult;
+  score?: number;
+  evaluationReport?: string;
+  workflowRunId: string;
+  workflowMode: "standard" | "sync";
+  preferredFormat: "json" | "ddl" | "mermaid";
+  status: "pending" | "running" | "completed" | "failed" | "waiting";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EvaluationWorkflowResponse {
   id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "waiting";
   result?: ERDExtractionResult | EvaluationWorkflowResult;
   error?: string;
   createdAt: string;
@@ -74,116 +91,109 @@ export interface MastraWorkflowResponse {
   steps?: Record<string, unknown>;
 }
 
-// API Functions for Mastra evaluation workflow
+// Helper function to convert EvaluationRecord to EvaluationWorkflowResponse
+function toWorkflowResponse(record: EvaluationRecord): EvaluationWorkflowResponse {
+  let result: ERDExtractionResult | EvaluationWorkflowResult | undefined;
+
+  // Build result object based on available data
+  if (record.extractedInformation && record.evaluationReport) {
+    result = {
+      extractedInformation: record.extractedInformation,
+      evaluationReport: record.evaluationReport,
+    };
+  } else if (record.extractedInformation) {
+    result = record.extractedInformation;
+  }
+
+  return {
+    id: record.id,
+    status: record.status,
+    result,
+    error: undefined,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
+}
+
+// API Functions for custom evaluation routes
 export const evaluationApi = {
-  // Start evaluation workflow synchronously
+  // Start evaluation workflow using custom API
   startEvaluation: async (data: EvaluationRequest): Promise<EvaluationWorkflowResponse> => {
     try {
-      // Create headers with user token if provided
+      // Set Authorization header with user token
       const headers: Record<string, string> = {};
       if (data.userToken) {
-        headers["X-User-Token"] = data.userToken;
+        headers["Authorization"] = `Bearer ${data.userToken}`;
       }
 
-      // Determine which workflow to use based on mode
-      const workflowName =
-        data.workflowMode === "sync" ? "evaluationSyncWorkflow" : "evaluationWorkflow";
+      console.log("startEvaluation - calling custom API with data:", {
+        questionDescription: data.questionDescription,
+        erdImageUrl: data.erdImage,
+        workflowMode: data.workflowMode || "standard",
+        preferredFormat: data.preferredFormat || "mermaid",
+      });
 
-      // First create a run
-      const createRunResponse = await evaluationServiceClient.post<{ runId: string }>(
-        `/workflows/${workflowName}/create-run`,
-        {},
+      // Call new custom API endpoint
+      // Note: baseURL already includes /evaluation, so we use / as the path
+      const response = await evaluationServiceClient.post<EvaluationRecord>(
+        ``,
+        {
+          questionDescription: data.questionDescription,
+          erdImageUrl: data.erdImage,
+          workflowMode: data.workflowMode || "standard",
+          preferredFormat: data.preferredFormat || "mermaid",
+        },
         { headers },
       );
 
-      const runId = createRunResponse.data.runId;
+      console.log("startEvaluation - received response:", response.data);
 
-      if (!runId) {
-        throw new Error("Failed to create evaluation run - no run ID returned");
-      }
-
-      // Then start the workflow synchronously
-      const response = await evaluationServiceClient.post<MastraWorkflowResponse>(
-        `/workflows/${workflowName}/start?runId=${runId}`,
-        { inputData: data },
-        { headers },
-      );
-
-      // Transform Mastra response format to our expected format
-      const responseData = response.data;
-
-      // Map Mastra status to our expected status
-      let status: "pending" | "running" | "completed" | "failed" = "pending";
-      let result = responseData.result;
-
-      console.log("startEvaluation - Mastra response status:", responseData.status);
-      console.log("startEvaluation - Mastra response result:", responseData.result);
-
-      if (responseData.status === "success") {
-        status = "completed";
-        // The workflow now returns the evaluation report directly as the result
-        result = responseData.result;
-        console.log("startEvaluation - mapped to completed status with result:", result);
-      } else if (responseData.status === "failed" || responseData.status === "error") {
-        status = "failed";
-      } else if (responseData.status === "running" || responseData.status === "in_progress") {
-        status = "running";
-      } else if (responseData.status === "waiting") {
-        // When workflow is waiting, check if we have extraction results in steps
-        status = "completed"; // Mark as completed for extraction step
-        if (responseData.steps && typeof responseData.steps === "object") {
-          const steps = responseData.steps as Record<
-            string,
-            { status: string; output?: ERDExtractionResult }
-          >;
-          const extractStep = steps["erdInformationExtractStep"];
-          if (extractStep && extractStep.status === "success" && extractStep.output) {
-            result = extractStep.output;
-          }
-        }
-      }
-
-      return {
-        id: runId,
-        status,
-        result,
-        error: responseData.error,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      // Convert database record to workflow response format
+      return toWorkflowResponse(response.data);
     } catch (error) {
       console.error("Error starting evaluation:", error);
       throw error;
     }
   },
 
-  // Get evaluation workflow status
-  getEvaluation: async (id: string, workflowName?: string): Promise<EvaluationWorkflowResponse> => {
-    const workflow = workflowName || "evaluationWorkflow";
-    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
-      `/workflows/${workflow}/runs/${id}`,
-    );
+  // Get evaluation from database
+  getEvaluation: async (id: string): Promise<EvaluationWorkflowResponse> => {
+    console.log("getEvaluation - fetching evaluation:", id);
+
+    // Note: baseURL already includes /evaluation, so we use /${id} as the path
+    const response = await evaluationServiceClient.get<EvaluationRecord>(`/${id}`);
+
+    console.log("getEvaluation - received record:", response.data);
+
+    // Convert database record to workflow response format
+    return toWorkflowResponse(response.data);
+  },
+
+  // Get evaluation execution result from workflow
+  getEvaluationResult: async (id: string): Promise<EvaluationWorkflowResponse> => {
+    console.log("getEvaluationResult - fetching workflow result for evaluation:", id);
+
+    // Note: baseURL already includes /evaluation, so we use /${id}/result as the path
+    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(`/${id}/result`);
+
+    console.log("getEvaluationResult - received workflow response:", response.data);
 
     // Transform Mastra response format to our expected format
     const data = response.data;
 
     // Map Mastra status to our expected status
-    let status: "pending" | "running" | "completed" | "failed" = "pending";
+    let status: "pending" | "running" | "completed" | "failed" | "waiting" = "pending";
     let result = data.result;
-
-    console.log("getEvaluation - Mastra response status:", data.status);
-    console.log("getEvaluation - Mastra response result:", data.result);
 
     if (data.status === "success") {
       status = "completed";
-      console.log("getEvaluation - mapped to completed status with result:", result);
     } else if (data.status === "failed" || data.status === "error") {
       status = "failed";
     } else if (data.status === "running" || data.status === "in_progress") {
       status = "running";
     } else if (data.status === "waiting") {
+      status = "waiting";
       // When workflow is waiting, check if we have extraction results in steps
-      status = "completed"; // Mark as completed for extraction step
       if (data.steps && typeof data.steps === "object") {
         const steps = data.steps as Record<
           string,
@@ -206,83 +216,33 @@ export const evaluationApi = {
     };
   },
 
-  // Get evaluation execution result
-  getEvaluationResult: async (
-    id: string,
-    workflowName?: string,
-  ): Promise<EvaluationWorkflowResponse> => {
-    const workflow = workflowName || "evaluationWorkflow";
-    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(
-      `/workflows/${workflow}/runs/${id}/execution-result`,
-    );
+  // Get evaluation list from database
+  getEvaluations: async (params: EvaluationListParams = {}): Promise<EvaluationRecord[]> => {
+    console.log("getEvaluations - fetching evaluations with params:", params);
 
-    // Transform Mastra response format to our expected format
-    const data = response.data;
+    // Note: baseURL already includes /evaluation, so we use / as the path
+    const response = await evaluationServiceClient.get<EvaluationRecord[]>("/", { params });
 
-    // Map Mastra status to our expected status
-    let status: "pending" | "running" | "completed" | "failed" = "pending";
-    let result = data.result;
+    console.log("getEvaluations - received records:", response.data.length);
 
-    if (data.status === "success") {
-      status = "completed";
-    } else if (data.status === "failed" || data.status === "error") {
-      status = "failed";
-    } else if (data.status === "running" || data.status === "in_progress") {
-      status = "running";
-    } else if (data.status === "waiting") {
-      // When workflow is waiting, check if we have extraction results in steps
-      status = "completed"; // Mark as completed for extraction step
-      if (data.steps && typeof data.steps === "object") {
-        const steps = data.steps as Record<
-          string,
-          { status: string; output?: ERDExtractionResult }
-        >;
-        const extractStep = steps["erdInformationExtractStep"];
-        if (extractStep && extractStep.status === "success" && extractStep.output) {
-          result = extractStep.output;
-        }
-      }
-    }
-
-    return {
-      id,
-      status,
-      result,
-      error: data.error,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  },
-
-  // Get evaluation list (if supported by Mastra)
-  getEvaluations: async (params: EvaluationListParams = {}): Promise<EvaluationListResponse> => {
-    const response = await evaluationServiceClient.get<EvaluationListResponse>(
-      "/workflows/evaluationWorkflow/runs",
-      { params },
-    );
     return response.data;
   },
 
-  // Cancel evaluation workflow (if supported)
-  cancelEvaluation: async (id: string): Promise<void> => {
-    const response = await evaluationServiceClient.post(
-      `/workflows/evaluationWorkflow/runs/${id}/cancel`,
-    );
-    return response.data;
-  },
-
-  // Send event to workflow run
-  sendEvent: async (
+  // Send finish-refinement event to workflow
+  sendFinishRefinementEvent: async (
     id: string,
-    event: string,
-    data?: Record<string, unknown>,
-    workflowName?: string,
-  ): Promise<void> => {
-    const workflow = workflowName || "evaluationWorkflow";
-    const response = await evaluationServiceClient.post(
-      `/workflows/${workflow}/runs/${id}/send-event`,
-      { event, data: data || {} },
-    );
+    extractedInformation: ERDExtractionResult,
+  ): Promise<{ success: boolean }> => {
+    console.log("sendFinishRefinementEvent - sending event for evaluation:", id);
+
+    // Note: baseURL already includes /evaluation, so we use /${id}/finish-refinement as the path
+    const response = await evaluationServiceClient.post(`/${id}/finish-refinement`, {
+      event: "finish-refinement",
+      data: { extractedInformation },
+    });
+
+    console.log("sendFinishRefinementEvent - response:", response.data);
+
     return response.data;
   },
 
@@ -407,16 +367,16 @@ export const useEvaluations = (params: EvaluationListParams = {}) => {
   });
 };
 
-export const useEvaluation = (id: string, enabled = true, workflowName?: string) => {
+export const useEvaluation = (id: string, enabled = true) => {
   return useQuery({
     queryKey: queryKeys.evaluations.detail(id),
     queryFn: async () => {
       try {
-        // First try to get the execution result
-        return await evaluationApi.getEvaluationResult(id, workflowName);
+        // First try to get the execution result from workflow
+        return await evaluationApi.getEvaluationResult(id);
       } catch {
-        // If execution result is not available, fall back to run status
-        return await evaluationApi.getEvaluation(id, workflowName);
+        // If execution result is not available, fall back to database record
+        return await evaluationApi.getEvaluation(id);
       }
     },
     enabled: enabled && !!id,
@@ -426,10 +386,23 @@ export const useEvaluation = (id: string, enabled = true, workflowName?: string)
       console.log("useEvaluation - polling check, data:", data);
 
       if (data) {
-        // Continue polling if status is pending, running, or if we don't have evaluation results yet
+        // Continue polling if status is pending or running
         if (data.status === "pending" || data.status === "running") {
           console.log("useEvaluation - continuing poll (status:", data.status, ")");
           return 2000; // 2 seconds
+        }
+
+        // For waiting status, check if we have extraction result
+        if (data.status === "waiting") {
+          if (data.result && typeof data.result === "object" && "entities" in data.result) {
+            // We have extraction result, stop polling
+            console.log("useEvaluation - stopping poll (waiting with extraction result)");
+            return false;
+          } else {
+            // Still waiting for extraction, keep polling
+            console.log("useEvaluation - continuing poll (waiting without result)");
+            return 2000;
+          }
         }
 
         // If status is completed, check if we have evaluation report
@@ -478,40 +451,25 @@ export const useEvaluation = (id: string, enabled = true, workflowName?: string)
   });
 };
 
-export const useCancelEvaluation = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: evaluationApi.cancelEvaluation,
-    onSuccess: (_, id) => {
-      // Invalidate the specific evaluation to refresh its status
-      queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.detail(id) });
-      // Invalidate evaluation lists
-      queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.lists() });
-    },
-  });
-};
-
-export interface UseSendEventOptions {
+export interface UseSendFinishRefinementEventOptions {
   onSuccess?: () => void;
   onError?: (error: unknown) => void;
 }
 
-export const useSendEvent = ({ onSuccess, onError }: UseSendEventOptions = {}) => {
+export const useSendFinishRefinementEvent = ({
+  onSuccess,
+  onError,
+}: UseSendFinishRefinementEventOptions = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       id,
-      event,
-      data,
-      workflowName,
+      extractedInformation,
     }: {
       id: string;
-      event: string;
-      data?: Record<string, unknown>;
-      workflowName?: string;
-    }) => evaluationApi.sendEvent(id, event, data, workflowName),
+      extractedInformation: ERDExtractionResult;
+    }) => evaluationApi.sendFinishRefinementEvent(id, extractedInformation),
     onSuccess: (_, { id }) => {
       // Invalidate the specific evaluation to refresh its status
       queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.detail(id) });

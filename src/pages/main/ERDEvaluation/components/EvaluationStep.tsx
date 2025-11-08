@@ -61,7 +61,6 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   const { data: workflowEvaluation, refetch } = useEvaluation(
     state.evaluationId!,
     !!state.evaluationId,
-    state.workflowName || undefined,
   );
 
   // Translation hook

@@ -7,7 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 // Service paths - these match the nginx routing configuration
 export const SERVICE_PATHS = {
   FILE: "/files", // nginx routes /api/files to file service
-  EVALUATION: "/evaluation", // nginx routes /api/evaluation to evaluation service
+  EVALUATION: "/evaluations", // nginx routes /api/evaluation to evaluation service
   BACKEND: "", // nginx routes /api to backend service (no prefix needed)
 } as const;
 

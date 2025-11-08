@@ -72,14 +72,12 @@ Integrates with the Mastra evaluation workflow for ERD analysis.
 - `GET /workflows/evaluationWorkflow/runs/:id` - Get evaluation status
 - `GET /workflows/evaluationWorkflow/runs/:id/execution-result` - Get evaluation result
 - `GET /workflows/evaluationWorkflow/runs` - List evaluations
-- `POST /workflows/evaluationWorkflow/runs/:id/cancel` - Cancel evaluation
 
 **React Query Hooks:**
 
 - `useStartEvaluation()` - Start evaluation mutation
 - `useEvaluation(id)` - Get evaluation status (auto-refreshing)
 - `useEvaluations()` - List evaluations query
-- `useCancelEvaluation()` - Cancel evaluation mutation
 
 ## Usage
 

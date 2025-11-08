@@ -64,7 +64,6 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
     setLoading,
     setError,
     setWorkflowMode,
-    setWorkflowName,
     setSelectedLanguage,
     setPreferredFormat,
   } = useWorkflow();
@@ -179,11 +178,6 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       setWorkflowMode(workflowMode);
       setPreferredFormat(preferredFormat);
 
-      // Determine and save workflow name
-      const workflowName =
-        workflowMode === "sync" ? "evaluationSyncWorkflow" : "evaluationWorkflow";
-      setWorkflowName(workflowName);
-
       // Upload file to file service
       toast.info("Uploading ERD image...");
       const uploadResult = await uploadFile.mutateAsync({ file: data.erdImage });
@@ -203,13 +197,13 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       const session = await fetchAuthSession();
       const userToken = session.tokens?.accessToken?.toString();
 
-      // Start evaluation workflow synchronously
+      // Start evaluation workflow using custom API
       startEvaluation.mutate({
         erdImage: fileUrl,
         questionDescription: data.questionDescription,
-        userToken: userToken, // Pass user token
-        workflowMode: workflowMode, // Pass workflow mode
-        preferredFormat: preferredFormat, // Pass preferred format
+        userToken: userToken,
+        workflowMode: workflowMode,
+        preferredFormat: preferredFormat,
       });
 
       // Navigate to extract step after starting evaluation

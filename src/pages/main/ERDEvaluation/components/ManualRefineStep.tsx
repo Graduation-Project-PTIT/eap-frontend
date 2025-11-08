@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
 import { ERDFormatTabs } from "@/components/erd";
-import { useSendEvent } from "@/api";
+import { useSendFinishRefinementEvent } from "@/api";
 import { toast } from "@/lib/toast";
 import type { ERDExtractionResult, ERDEntity } from "@/api/services/evaluation-service";
 
@@ -35,8 +35,8 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   const isUndoingRef = useRef(false);
   const lastSavedDataRef = useRef<string>("");
 
-  // Hook for sending events to the workflow
-  const sendEvent = useSendEvent({
+  // Hook for sending finish-refinement event to the workflow
+  const sendFinishRefinement = useSendFinishRefinementEvent({
     onSuccess: () => {
       toast.success("Refinements saved! Proceeding to evaluation...");
       setLoading(false);
@@ -143,13 +143,9 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
     // Send the "finish-refinement" event to the workflow with the refined data
     // Note: dataToSend includes all three formats (entities, ddlScript, mermaidDiagram)
     // Only the entities (JSON format) can be edited; DDL and Mermaid are read-only from original extraction
-    sendEvent.mutate({
-      id: state.evaluationId,
-      event: "finish-refinement",
-      data: {
-        extractedInformation: dataToSend,
-      },
-      workflowName: state.workflowName || undefined,
+    sendFinishRefinement.mutate({
+      id: state.evaluationId!,
+      extractedInformation: dataToSend,
     });
   };
 

@@ -23,17 +23,26 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
   const { data: evaluation, error: evaluationError } = useEvaluation(
     state.evaluationId!,
     !!state.evaluationId,
-    state.workflowName || undefined,
   );
 
   // Update workflow state when evaluation completes
   useEffect(() => {
-    if (evaluation?.status === "completed" && evaluation.result && !state.extractedData) {
+    // Check if extraction is complete (either "completed" or "waiting" status with result)
+    if (
+      (evaluation?.status === "completed" || evaluation?.status === "waiting") &&
+      evaluation.result &&
+      !state.extractedData
+    ) {
+      console.log("ExtractDiagramStep - extraction complete, status:", evaluation.status);
+      console.log("ExtractDiagramStep - result:", evaluation.result);
+
       // Handle both ERDExtractionResult and EvaluationWorkflowResult types
       const extractedData =
         "entities" in evaluation.result
           ? evaluation.result
           : evaluation.result.extractedInformation;
+
+      console.log("ExtractDiagramStep - setting extracted data and moving to next step");
       setExtractedData(extractedData);
 
       // Show success toast and automatically navigate to the next step (refine)
@@ -78,6 +87,13 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
           description: "AI is analyzing your ERD and extracting entities and relationships",
           progress: 60,
         };
+      case "waiting":
+        return {
+          icon: <CheckCircle className="h-8 w-8 text-green-500" />,
+          title: "Extraction Complete!",
+          description: "Successfully extracted entities and relationships - ready for refinement",
+          progress: 100,
+        };
       case "completed":
         return {
           icon: <CheckCircle className="h-8 w-8 text-green-500" />,
@@ -102,7 +118,7 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
     }
   }, [evaluation]);
 
-  const isCompleted = evaluation?.status === "completed";
+  const isCompleted = evaluation?.status === "completed" || evaluation?.status === "waiting";
   const isFailed = evaluation?.status === "failed";
 
   return (
