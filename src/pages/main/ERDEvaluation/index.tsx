@@ -71,7 +71,7 @@ const ERDEvaluationContent = () => {
   return (
     <div className="flex h-full">
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${isHistorySidebarOpen ? "mr-80" : ""}`}>
+      <div className="flex-1">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

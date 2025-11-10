@@ -221,7 +221,7 @@ export const evaluationApi = {
     console.log("getEvaluations - fetching evaluations with params:", params);
 
     // Note: baseURL already includes /evaluation, so we use / as the path
-    const response = await evaluationServiceClient.get<EvaluationRecord[]>("/", { params });
+    const response = await evaluationServiceClient.get<EvaluationRecord[]>("", { params });
 
     console.log("getEvaluations - received records:", response.data.length);
 
