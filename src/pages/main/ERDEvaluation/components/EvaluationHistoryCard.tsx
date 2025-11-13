@@ -17,8 +17,6 @@ const EvaluationHistoryCard = ({ evaluation, onViewDetails }: EvaluationHistoryC
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [imageError, setImageError] = useState<boolean>(false);
 
-  console.log(evaluation);
-
   // Fetch image with authentication
   useEffect(() => {
     const fetchImage = async () => {

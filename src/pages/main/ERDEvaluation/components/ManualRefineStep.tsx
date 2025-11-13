@@ -232,21 +232,6 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <Badge variant="secondary" className="text-xs">
-                {refinedData.entities.length} entities
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                {refinedData.entities.reduce((acc, e) => acc + e.attributes.length, 0)} attributes
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                {refinedData.entities.reduce(
-                  (acc, e) => acc + e.attributes.filter((a) => a.foreignKey).length,
-                  0,
-                )}{" "}
-                relationships
-              </Badge>
-            </div>
           </div>
 
           {/* Fullscreen ERD Format Tabs */}
