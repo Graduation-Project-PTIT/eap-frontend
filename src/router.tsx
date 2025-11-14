@@ -12,6 +12,7 @@ import BatchDetail from "./pages/main/MassEvaluation/BatchDetail";
 import Documentation from "./pages/main/Documentation";
 import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
+import ERDDiagram from "./pages/main/ERDDiagram";
 
 const authRoutes = {
   path: ROUTES.AUTH.ROOT,
@@ -58,6 +59,10 @@ const mainRoutes = {
     {
       path: ROUTES.SETTINGS,
       element: <Settings />,
+    },
+    {
+      path: ROUTES.ERD_DIAGRAM,
+      element: <ERDDiagram />,
     },
   ],
 };

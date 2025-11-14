@@ -27,6 +27,11 @@ const sidebarSettings = [
     url: ROUTES.DOCUMENTATION,
     icon: FileText,
   },
+  {
+    title: "ERD Diagram",
+    url: ROUTES.ERD_DIAGRAM,
+    icon: Database,
+  },
 ];
 
 export default sidebarSettings;

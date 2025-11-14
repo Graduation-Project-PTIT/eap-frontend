@@ -16,6 +16,7 @@
     "prepare": "if [ -z \"$CI\" ]; then husky install; fi || true"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.8",
     "@hookform/resolvers": "^5.1.1",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -48,6 +49,7 @@
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-query-devtools": "^5.83.0",
+    "@xyflow/react": "^12.9.3",
     "aws-amplify": "^6.15.1",
     "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",

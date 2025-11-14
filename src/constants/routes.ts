@@ -14,6 +14,7 @@ const ROUTES = {
   },
   DOCUMENTATION: "/docs",
   SETTINGS: "/settings",
+  ERD_DIAGRAM: "/erd-diagram",
 
   NOT_FOUND: "/404",
   FORBIDDEN: "/403",
