@@ -3,21 +3,22 @@ import {
   ReactFlow,
   applyNodeChanges,
   applyEdgeChanges,
-  addEdge,
   Background,
   Controls,
   type OnNodesChange,
   type OnEdgesChange,
-  type OnConnect,
+  type OnConnectEnd,
+  type FinalConnectionState,
 } from "@xyflow/react";
 import { type Node, type Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import ERDNode from "@/components/erd/diagram-view/ERDNode";
-import ERDEdge from "@/components/erd/diagram-view/ERDEdge";
+import ERDNode, { type ERDNodeData } from "@/components/erd/diagram-view/ERDNode";
+import ERDEdge, { type ERDEdgeData } from "@/components/erd/diagram-view/ERDEdge";
+import createEdge from "../utils/createEdge";
 
 interface ERDDiagramProps {
-  initialNodes: Node[];
-  initialEdges: Edge[];
+  initialNodes: Node<ERDNodeData>[];
+  initialEdges: Edge<ERDEdgeData>[];
 }
 
 const nodeTypes = {
@@ -32,17 +33,100 @@ const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
 
-  const onNodesChange: OnNodesChange = useCallback(
+  const onNodesChange: OnNodesChange<Node<ERDNodeData>> = useCallback(
     (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
     [],
   );
-  const onEdgesChange: OnEdgesChange = useCallback(
+
+  const onEdgesChange: OnEdgesChange<Edge<ERDEdgeData>> = useCallback(
     (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
     [],
   );
-  const onConnect: OnConnect = useCallback(
-    (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-    [],
+
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (_event, connectionState: FinalConnectionState) => {
+      console.log(connectionState);
+      const { fromNode, toNode, fromHandle, toHandle } = connectionState;
+
+      // Only create edge if we have both nodes and handles
+      if (!fromNode || !toNode || !fromHandle?.id || !toHandle?.id) {
+        return;
+      }
+
+      // Find the source and target nodes in our nodes array
+      const sourceNode = nodes.find((n) => n.id === fromNode.id);
+      const targetNode = nodes.find((n) => n.id === toNode.id);
+
+      if (!sourceNode || !targetNode) {
+        return;
+      }
+
+      // Parse handle IDs to extract attribute information
+      // Handle format: "prefix_entityName-attributeName-type" or "prefix_index_entityName-attributeName-type"
+      const parseHandleId = (handleId: string) => {
+        // Remove prefix
+        let attributeId = handleId;
+        if (handleId.startsWith("left_rel_")) {
+          attributeId = handleId.replace("left_rel_", "");
+        } else if (handleId.startsWith("right_rel_")) {
+          attributeId = handleId.replace("right_rel_", "");
+        } else if (handleId.startsWith("target_rel_")) {
+          // Remove "target_rel_" and the index number (e.g., "target_rel_0_")
+          attributeId = handleId.replace(/^target_rel_\d+_/, "");
+        }
+
+        // Split by dash to get entity, attribute, and type
+        const parts = attributeId.split("-");
+        if (parts.length < 3) return null;
+
+        // The parts are sanitized (underscores instead of special chars)
+        // We keep them as-is since we'll match against sanitized names
+        const entityName = parts[0];
+        const attributeName = parts[1];
+        const attributeType = parts.slice(2).join("-");
+
+        return { entityName, attributeName, attributeType };
+      };
+
+      const sourceHandleInfo = parseHandleId(fromHandle.id);
+      const targetHandleInfo = parseHandleId(toHandle.id);
+
+      if (!sourceHandleInfo || !targetHandleInfo) {
+        console.error("Failed to parse handle IDs");
+        return;
+      }
+
+      // Find the attributes in the node data
+      // Match by sanitizing the attribute name (replacing special chars with underscores)
+      const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9]/g, "_");
+
+      const sourceAttribute = sourceNode.data.entity.attributes.find(
+        (attr) => sanitizeName(attr.name) === sourceHandleInfo.attributeName,
+      );
+
+      const targetAttribute = targetNode.data.entity.attributes.find(
+        (attr) => sanitizeName(attr.name) === targetHandleInfo.attributeName,
+      );
+
+      if (!sourceAttribute || !targetAttribute) {
+        console.error("Failed to find attributes in node data");
+        return;
+      }
+
+      // Create the new edge using the createEdge utility
+      const newEdge = createEdge({
+        sourceNode,
+        targetNode,
+        sourceAttribute,
+        targetAttribute,
+        sourceHandleId: fromHandle.id,
+        targetHandleId: toHandle.id,
+      });
+
+      // Add the new edge to the edges state
+      setEdges((eds) => [...eds, newEdge]);
+    },
+    [nodes],
   );
 
   return (
@@ -54,7 +138,7 @@ const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
         fitView
       >
         <Background />

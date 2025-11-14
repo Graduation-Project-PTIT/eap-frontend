@@ -1,5 +1,7 @@
 import dagre from "@dagrejs/dagre";
 import type { Node, Edge } from "@xyflow/react";
+import type { ERDNodeData } from "../diagram-view/ERDNode";
+import type { ERDEdgeData } from "../diagram-view/ERDEdge";
 
 const nodeWidth = 360;
 const nodeHeight = 180;
@@ -7,12 +9,12 @@ const nodeHeight = 180;
 const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
 
 const getLayoutedElements = (
-  nodes: Node[],
-  edges: Edge[],
+  nodes: Node<ERDNodeData>[],
+  edges: Edge<ERDEdgeData>[],
   direction = "LR",
 ): {
-  nodes: Node[];
-  edges: Edge[];
+  nodes: Node<ERDNodeData>[];
+  edges: Edge<ERDEdgeData>[];
 } => {
   const isHorizontal = direction === "LR";
   dagreGraph.setGraph({ rankdir: direction });
@@ -39,7 +41,7 @@ const getLayoutedElements = (
       },
     };
 
-    return newNode as Node;
+    return newNode as Node<ERDNodeData>;
   });
 
   return { nodes: newNodes, edges };
