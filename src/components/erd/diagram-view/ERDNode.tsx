@@ -62,18 +62,29 @@ const ERDNode = ({ data, selected, id }: NodeProps<ERDNodeProps>) => {
 
         <CardContent className="pt-0 px-0 mt-[-2rem]">
           <div>
-            {entity.attributes.map((attribute, index) => (
-              <ERDNodeField
-                key={`${entity.name}-${attribute.name}-${attribute.type}-${index}`}
-                tableNodeId={id}
-                entityName={entity.name}
-                attribute={attribute}
-                focused={focused}
-                highlighted={false}
-                isConnectable={true}
-                readonly={!isEditable}
-              />
-            ))}
+            {entity.attributes
+              .sort((a, b) => {
+                if (a.primaryKey && !b.primaryKey) return -1;
+                if (!a.primaryKey && b.primaryKey) return 1;
+                return 0;
+              })
+              .sort((a, b) => {
+                if (a.foreignKey && !b.foreignKey) return 1;
+                if (!a.foreignKey && b.foreignKey) return -1;
+                return 0;
+              })
+              .map((attribute, index) => (
+                <ERDNodeField
+                  key={`${entity.name}-${attribute.name}-${attribute.type}-${index}`}
+                  tableNodeId={id}
+                  entityName={entity.name}
+                  attribute={attribute}
+                  focused={focused}
+                  highlighted={false}
+                  isConnectable={true}
+                  readonly={!isEditable}
+                />
+              ))}
           </div>
         </CardContent>
       </Card>

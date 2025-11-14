@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Handle, Position, useConnection } from "@xyflow/react";
+import React, { useMemo, useEffect, useRef } from "react";
+import { Handle, Position, useConnection, useUpdateNodeInternals, useStore } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
 import { Key, Link, Type } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,8 @@ export const ERDNodeField: React.FC<ERDNodeFieldProps> = React.memo(
     readonly = false,
   }) => {
     const connection = useConnection();
+    const updateNodeInternals = useUpdateNodeInternals();
+    const edges = useStore((store) => store.edges);
 
     // Check if this field is a potential target during connection
     const isTarget = useMemo(() => {
@@ -43,6 +45,36 @@ export const ERDNodeField: React.FC<ERDNodeFieldProps> = React.memo(
           connection.fromHandle.id?.startsWith(LEFT_HANDLE_ID_PREFIX))
       );
     }, [connection, tableNodeId]);
+
+    // Count how many edges are connected to this field as a target
+    const numberOfEdgesToField = useMemo(() => {
+      let count = 0;
+      const targetHandlePrefix =
+        createTargetHandleId(entityName, attribute.name, attribute.type, 0).split("_")[0] +
+        "_" +
+        createTargetHandleId(entityName, attribute.name, attribute.type, 0).split("_")[1] +
+        "_";
+
+      for (const edge of edges) {
+        if (edge.target === tableNodeId && edge.targetHandle?.startsWith(targetHandlePrefix)) {
+          count++;
+        }
+      }
+      return count;
+    }, [edges, tableNodeId, entityName, attribute.name, attribute.type]);
+
+    const previousNumberOfEdgesToFieldRef = useRef(numberOfEdgesToField);
+
+    // Update node internals when the number of edges changes
+    useEffect(() => {
+      if (previousNumberOfEdgesToFieldRef.current !== numberOfEdgesToField) {
+        const timer = setTimeout(() => {
+          updateNodeInternals(tableNodeId);
+          previousNumberOfEdgesToFieldRef.current = numberOfEdgesToField;
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [tableNodeId, updateNodeInternals, numberOfEdgesToField]);
 
     // Get icon based on attribute type
     const getAttributeIcon = () => {
@@ -90,18 +122,35 @@ export const ERDNodeField: React.FC<ERDNodeFieldProps> = React.memo(
           />
         )}
 
-        {/* TARGET HANDLE - For incoming connections */}
-        {isConnectable && (
-          <Handle
-            id={createTargetHandleId(entityName, attribute.name, attribute.type, 0)}
-            className={
-              isTarget
-                ? "!absolute !left-0 !top-0 !h-full !w-full !transform-none !rounded-none !border-none !opacity-0"
-                : "!invisible"
-            }
-            position={Position.Left}
-            type="target"
-          />
+        {/* MULTIPLE TARGET HANDLES - For existing connections */}
+        {(!connection.inProgress || isTarget) && isConnectable && (
+          <>
+            {Array.from({ length: numberOfEdgesToField }, (_, index) => index).map((index) => (
+              <Handle
+                key={`${createTargetHandleId(entityName, attribute.name, attribute.type, index)}`}
+                id={createTargetHandleId(entityName, attribute.name, attribute.type, index)}
+                className="!invisible"
+                position={Position.Left}
+                type="target"
+              />
+            ))}
+            {/* Additional target handle for new connections */}
+            <Handle
+              id={createTargetHandleId(
+                entityName,
+                attribute.name,
+                attribute.type,
+                numberOfEdgesToField,
+              )}
+              className={
+                isTarget
+                  ? "!absolute !left-0 !top-0 !h-full !w-full !transform-none !rounded-none !border-none !opacity-0"
+                  : "!invisible"
+              }
+              position={Position.Left}
+              type="target"
+            />
+          </>
         )}
 
         {/* Attribute Content */}

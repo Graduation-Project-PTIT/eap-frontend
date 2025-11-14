@@ -17,6 +17,7 @@ import ERDNode, { type ERDNodeData } from "@/components/erd/diagram-view/ERDNode
 import dagre from "@dagrejs/dagre";
 import mockData from "./mock";
 import { getEdgesForDiagram } from "@/components/erd/utils/getEdgesForDiagram";
+import ERDEdge from "@/components/erd/diagram-view/ERDEdge";
 
 const initialNodes: Node<ERDNodeData>[] = mockData.entities.map((entity, index) => ({
   id: `n${index + 1}`,
@@ -29,6 +30,10 @@ const initialEdges: Edge[] = getEdgesForDiagram(initialNodes);
 
 const nodeTypes = {
   erdNode: ERDNode,
+};
+
+const edgeTypes = {
+  erdEdge: ERDEdge,
 };
 
 const nodeWidth = 360;
@@ -104,6 +109,7 @@ const ERDDiagram = () => {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
