@@ -5,3 +5,4 @@ export * from "./query-client";
 // Export service APIs
 export * from "./services/file-service";
 export * from "./services/evaluation-service";
+export * from "./services/chat-service";

@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 export const SERVICE_PATHS = {
   FILE: "/files", // nginx routes /api/files to file service
   EVALUATION: "/evaluations", // nginx routes /api/evaluation to evaluation service
+  CHAT: "/chat", // nginx routes /api/chat to evaluation service
   BACKEND: "", // nginx routes /api to backend service (no prefix needed)
 } as const;
 
@@ -120,6 +121,7 @@ export const createServiceClient = (servicePath: string): AxiosInstance => {
 // Export service-specific clients
 export const fileServiceClient = createServiceClient(SERVICE_PATHS.FILE);
 export const evaluationServiceClient = createServiceClient(SERVICE_PATHS.EVALUATION);
+export const chatClient = createServiceClient(SERVICE_PATHS.CHAT);
 export const backendServiceClient = createServiceClient(SERVICE_PATHS.BACKEND);
 
 // Generic API response type

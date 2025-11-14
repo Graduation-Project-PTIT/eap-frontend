@@ -112,6 +112,13 @@ export const queryKeys = {
     tasks: (batchId: string) => [...queryKeys.massEvaluation.all, "tasks", batchId] as const,
     stats: () => [...queryKeys.massEvaluation.all, "stats"] as const,
   },
+
+  // Chat queries
+  chat: {
+    all: ["chat"] as const,
+    conversations: () => [...queryKeys.chat.all, "conversation"] as const,
+    conversation: (id: string) => [...queryKeys.chat.conversations(), id] as const,
+  },
 } as const;
 
 // Utility functions for cache management
