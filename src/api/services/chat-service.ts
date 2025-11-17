@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { chatClient } from "../client";
+import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 import type { ERDEntity } from "./evaluation-service";
 
@@ -43,9 +43,9 @@ export interface ConversationHistory {
 
 // API Functions
 export const chatApi = {
-  // Send message - POST /chat
+  // Send message - POST /ai/chat
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
-    const response = await chatClient.post<ChatResponse>("", {
+    const response = await aiServiceClient.post<ChatResponse>("/chat", {
       conversationId: request.conversationId,
       message: request.message,
       enableSearch: request.enableSearch ?? false,
@@ -53,15 +53,15 @@ export const chatApi = {
     return response.data;
   },
 
-  // Get conversation - GET /chat/:conversationId
+  // Get conversation - GET /ai/chat/:conversationId
   getConversation: async (conversationId: string): Promise<ConversationHistory> => {
-    const response = await chatClient.get<ConversationHistory>(`/${conversationId}`);
+    const response = await aiServiceClient.get<ConversationHistory>(`/chat/${conversationId}`);
     return response.data;
   },
 
-  // Reset conversation - POST /chat/reset
+  // Reset conversation - POST /ai/chat/reset
   resetConversation: async (conversationId: string): Promise<void> => {
-    await chatClient.post("/reset", { conversationId });
+    await aiServiceClient.post("/chat/reset", { conversationId });
   },
 };
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { backendServiceClient } from "../client";
+import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 
 // Types
@@ -63,44 +63,44 @@ export interface BatchListFilters {
 
 // API Functions
 export const massEvaluationApi = {
-  // Get all batches - GET /mass-evaluation/batches
+  // Get all batches - GET /ai/mass-evaluation/batches
   getBatches: async (filters?: BatchListFilters): Promise<BatchListData> => {
-    const response = await backendServiceClient.get<BatchListData>("/mass-evaluation/batches", {
+    const response = await aiServiceClient.get<BatchListData>("/mass-evaluation/batches", {
       params: filters,
     });
     return response.data;
   },
 
-  // Get single batch - GET /mass-evaluation/batches/:id
+  // Get single batch - GET /ai/mass-evaluation/batches/:id
   getBatch: async (batchId: string): Promise<MassEvaluationBatch> => {
-    const response = await backendServiceClient.get<MassEvaluationBatch>(
+    const response = await aiServiceClient.get<MassEvaluationBatch>(
       `/mass-evaluation/batches/${batchId}`,
     );
     return response.data;
   },
 
-  // Create batch - POST /mass-evaluation/batches
+  // Create batch - POST /ai/mass-evaluation/batches
   createBatch: async (data: CreateBatchRequest): Promise<MassEvaluationBatch> => {
-    const response = await backendServiceClient.post<MassEvaluationBatch>(
+    const response = await aiServiceClient.post<MassEvaluationBatch>(
       "/mass-evaluation/batches",
       data,
     );
     return response.data;
   },
 
-  // Delete batch - DELETE /mass-evaluation/batches/:id
+  // Delete batch - DELETE /ai/mass-evaluation/batches/:id
   deleteBatch: async (batchId: string): Promise<void> => {
-    await backendServiceClient.delete(`/mass-evaluation/batches/${batchId}`);
+    await aiServiceClient.delete(`/mass-evaluation/batches/${batchId}`);
   },
 
-  // Start batch evaluation - POST /mass-evaluation/batches/:id/start
+  // Start batch evaluation - POST /ai/mass-evaluation/batches/:id/start
   startBatch: async (batchId: string): Promise<void> => {
-    await backendServiceClient.post(`/mass-evaluation/batches/${batchId}/start`);
+    await aiServiceClient.post(`/mass-evaluation/batches/${batchId}/start`);
   },
 
-  // Retry failed task - POST /mass-evaluation/tasks/:id/retry
+  // Retry failed task - POST /ai/mass-evaluation/tasks/:id/retry
   retryTask: async (taskId: string): Promise<void> => {
-    await backendServiceClient.post(`/mass-evaluation/tasks/${taskId}/retry`);
+    await aiServiceClient.post(`/mass-evaluation/tasks/${taskId}/retry`);
   },
 };
 

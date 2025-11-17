@@ -121,9 +121,9 @@ function EvaluationComponent() {
 
   const { data: evaluation } = useEvaluation(evaluationId!, !!evaluationId);
 
-  const handleStartEvaluation = (imageUrl: string) => {
+  const handleStartEvaluation = (fileKey: string) => {
     startEvaluation.mutate(
-      { erdImage: imageUrl },
+      { fileKey: fileKey },
       {
         onSuccess: (result) => {
           setEvaluationId(result.id);

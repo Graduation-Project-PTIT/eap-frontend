@@ -41,13 +41,11 @@ const EvaluationDetailDialog = ({
         setImageLoading(true);
         setImageError(false);
 
-        // Extract file ID from erdImageUrl
-        const url = new URL(evaluation.erdImageUrl);
-        const pathParts = url.pathname.split("/");
-        const fileId = pathParts[pathParts.length - 2]; // Extract from /files/{fileId}/render
+        // Use fileKey directly
+        const fileId = evaluation.fileKey;
 
         if (!fileId) {
-          throw new Error("Invalid file URL");
+          throw new Error("Missing file key");
         }
 
         // Fetch image with authentication
@@ -74,7 +72,7 @@ const EvaluationDetailDialog = ({
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [evaluation, open]);
+  }, [evaluation?.fileKey, open]);
 
   if (!evaluation) return null;
 

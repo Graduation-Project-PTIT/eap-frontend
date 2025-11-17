@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { evaluationServiceClient } from "../client";
+import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 
 // Types based on the Mastra evaluation workflow
@@ -35,7 +35,7 @@ export interface EvaluationWorkflowResult {
 }
 
 export interface EvaluationRequest {
-  erdImage: string; // URL to the ERD image
+  fileKey: string; // File ID/key for the ERD image
   questionDescription: string; // Description of the evaluation objective
   userToken?: string; // User access token for file authentication
   workflowMode?: "standard" | "sync"; // Workflow mode: standard (with refinement) or sync (direct evaluation)
@@ -47,7 +47,7 @@ export interface EvaluationRecord {
   id: string;
   userId: string;
   questionDescription: string;
-  erdImageUrl: string;
+  fileKey: string;
   extractedInformation?: ERDExtractionResult;
   score?: number;
   evaluationReport?: string;
@@ -128,18 +128,18 @@ export const evaluationApi = {
 
       console.log("startEvaluation - calling custom API with data:", {
         questionDescription: data.questionDescription,
-        erdImageUrl: data.erdImage,
+        fileKey: data.fileKey,
         workflowMode: data.workflowMode || "standard",
         preferredFormat: data.preferredFormat || "mermaid",
       });
 
       // Call new custom API endpoint
-      // Note: baseURL already includes /evaluation, so we use / as the path
-      const response = await evaluationServiceClient.post<EvaluationRecord>(
-        ``,
+      // Note: baseURL already includes /ai, so we use /evaluations as the path
+      const response = await aiServiceClient.post<EvaluationRecord>(
+        `/evaluations`,
         {
           questionDescription: data.questionDescription,
-          erdImageUrl: data.erdImage,
+          fileKey: data.fileKey,
           workflowMode: data.workflowMode || "standard",
           preferredFormat: data.preferredFormat || "mermaid",
         },
@@ -160,8 +160,8 @@ export const evaluationApi = {
   getEvaluation: async (id: string): Promise<EvaluationWorkflowResponse> => {
     console.log("getEvaluation - fetching evaluation:", id);
 
-    // Note: baseURL already includes /evaluation, so we use /${id} as the path
-    const response = await evaluationServiceClient.get<EvaluationRecord>(`/${id}`);
+    // Note: baseURL already includes /ai, so we use /evaluations/${id} as the path
+    const response = await aiServiceClient.get<EvaluationRecord>(`/evaluations/${id}`);
 
     console.log("getEvaluation - received record:", response.data);
 
@@ -173,8 +173,8 @@ export const evaluationApi = {
   getEvaluationResult: async (id: string): Promise<EvaluationWorkflowResponse> => {
     console.log("getEvaluationResult - fetching workflow result for evaluation:", id);
 
-    // Note: baseURL already includes /evaluation, so we use /${id}/result as the path
-    const response = await evaluationServiceClient.get<MastraWorkflowResponse>(`/${id}/result`);
+    // Note: baseURL already includes /ai, so we use /evaluations/${id}/result as the path
+    const response = await aiServiceClient.get<MastraWorkflowResponse>(`/evaluations/${id}/result`);
 
     console.log("getEvaluationResult - received workflow response:", response.data);
 
@@ -220,8 +220,8 @@ export const evaluationApi = {
   getEvaluations: async (params: EvaluationListParams = {}): Promise<EvaluationRecord[]> => {
     console.log("getEvaluations - fetching evaluations with params:", params);
 
-    // Note: baseURL already includes /evaluation, so we use / as the path
-    const response = await evaluationServiceClient.get<EvaluationRecord[]>("", { params });
+    // Note: baseURL already includes /ai, so we use /evaluations as the path
+    const response = await aiServiceClient.get<EvaluationRecord[]>("/evaluations", { params });
 
     console.log("getEvaluations - received records:", response.data.length);
 
@@ -235,8 +235,8 @@ export const evaluationApi = {
   ): Promise<{ success: boolean }> => {
     console.log("sendFinishRefinementEvent - sending event for evaluation:", id);
 
-    // Note: baseURL already includes /evaluation, so we use /${id}/finish-refinement as the path
-    const response = await evaluationServiceClient.post(`/${id}/finish-refinement`, {
+    // Note: baseURL already includes /ai, so we use /evaluations/${id}/finish-refinement as the path
+    const response = await aiServiceClient.post(`/evaluations/${id}/finish-refinement`, {
       event: "finish-refinement",
       data: { extractedInformation },
     });
@@ -256,7 +256,7 @@ export const evaluationApi = {
       });
 
       // Start translation using custom route
-      await evaluationServiceClient.post(`/${data.evaluationId}/translation`, {
+      await aiServiceClient.post(`/evaluations/${data.evaluationId}/translation`, {
         evaluationReport: data.evaluationReport,
         targetLanguage: data.targetLanguage,
       });
@@ -275,7 +275,7 @@ export const evaluationApi = {
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
 
         // Get the run status - response structure is at root level, not in snapshot
-        const statusResponse = await evaluationServiceClient.get<{
+        const statusResponse = await aiServiceClient.get<{
           status?: string;
           result?: {
             translatedReport?: string;
@@ -285,7 +285,7 @@ export const evaluationApi = {
             targetLanguage?: string;
           };
           steps?: Record<string, unknown>;
-        }>(`/${data.evaluationId}/translation/result`);
+        }>(`/evaluations/${data.evaluationId}/translation/result`);
 
         const runData = statusResponse.data;
 

@@ -186,7 +186,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
         throw new Error("Failed to upload file");
       }
 
-      // Get the file render URL for the evaluation service
+      // Store the file URL for display purposes
       const fileUrl = fileApi.getFileRenderUrl(uploadResult.file.id);
       setFileUrl(fileUrl);
 
@@ -197,9 +197,9 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       const session = await fetchAuthSession();
       const userToken = session.tokens?.accessToken?.toString();
 
-      // Start evaluation workflow using custom API
+      // Start evaluation workflow using custom API with fileKey
       startEvaluation.mutate({
-        erdImage: fileUrl,
+        fileKey: uploadResult.file.id,
         questionDescription: data.questionDescription,
         userToken: userToken,
         workflowMode: workflowMode,

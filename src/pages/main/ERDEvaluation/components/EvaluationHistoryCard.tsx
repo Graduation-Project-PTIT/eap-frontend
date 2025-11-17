@@ -24,13 +24,11 @@ const EvaluationHistoryCard = ({ evaluation, onViewDetails }: EvaluationHistoryC
         setImageLoading(true);
         setImageError(false);
 
-        // Extract file ID from erdImageUrl
-        const url = new URL(evaluation.erdImageUrl);
-        const pathParts = url.pathname.split("/");
-        const fileId = pathParts[pathParts.length - 2]; // Extract from /files/{fileId}/render
+        // Use fileKey directly
+        const fileId = evaluation.fileKey;
 
         if (!fileId) {
-          throw new Error("Invalid file URL");
+          throw new Error("Missing file key");
         }
 
         // Fetch image with authentication
@@ -57,7 +55,7 @@ const EvaluationHistoryCard = ({ evaluation, onViewDetails }: EvaluationHistoryC
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [evaluation.erdImageUrl]);
+  }, [evaluation.fileKey]);
 
   const statusConfig: Record<string, { bgColor: string }> = {
     pending: { bgColor: "bg-yellow-50 dark:bg-yellow-950" },
