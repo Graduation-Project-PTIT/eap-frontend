@@ -35,14 +35,6 @@ export interface CreateBatchRequest {
   fileKeys: string[];
 }
 
-// Backend ResponseDTO wrapper
-interface BackendResponse<T> {
-  message: string;
-  data: T;
-  meta?: Record<string, unknown>;
-  timestamp: number;
-}
-
 export interface CreateBatchResponse {
   data: MassEvaluationBatch;
 }
@@ -73,28 +65,27 @@ export interface BatchListFilters {
 export const massEvaluationApi = {
   // Get all batches - GET /mass-evaluation/batches
   getBatches: async (filters?: BatchListFilters): Promise<BatchListData> => {
-    const response = await backendServiceClient.get<BackendResponse<BatchListData>>(
-      "/mass-evaluation/batches",
-      { params: filters },
-    );
-    return response.data.data;
+    const response = await backendServiceClient.get<BatchListData>("/mass-evaluation/batches", {
+      params: filters,
+    });
+    return response.data;
   },
 
   // Get single batch - GET /mass-evaluation/batches/:id
   getBatch: async (batchId: string): Promise<MassEvaluationBatch> => {
-    const response = await backendServiceClient.get<BackendResponse<MassEvaluationBatch>>(
+    const response = await backendServiceClient.get<MassEvaluationBatch>(
       `/mass-evaluation/batches/${batchId}`,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Create batch - POST /mass-evaluation/batches
   createBatch: async (data: CreateBatchRequest): Promise<MassEvaluationBatch> => {
-    const response = await backendServiceClient.post<BackendResponse<MassEvaluationBatch>>(
+    const response = await backendServiceClient.post<MassEvaluationBatch>(
       "/mass-evaluation/batches",
       data,
     );
-    return response.data.data;
+    return response.data;
   },
 
   // Delete batch - DELETE /mass-evaluation/batches/:id

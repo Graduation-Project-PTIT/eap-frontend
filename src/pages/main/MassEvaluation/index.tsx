@@ -219,18 +219,17 @@ const MassEvaluationList = () => {
                         </TableCell>
                         <TableCell>
                           {(() => {
-                            const totalTasks = batch.tasks?.length || 0;
-                            const completedTasks =
-                              batch.tasks?.filter(
-                                (t) => t.status === "completed" || t.status === "failed",
-                              ).length || 0;
+                            const totalTasks = batch.totalTasks || 0;
+                            const completedTasks = batch.completedTasks || 0;
+                            const failedTasks = batch.failedTasks || 0;
+                            const finishedTasks = completedTasks + failedTasks;
                             const progress =
-                              totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                              totalTasks > 0 ? (finishedTasks / totalTasks) * 100 : 0;
 
                             return (
                               <div className="flex items-center gap-2">
                                 <span className="text-sm">
-                                  {completedTasks} / {totalTasks}
+                                  {finishedTasks} / {totalTasks}
                                 </span>
                                 <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                                   <div
