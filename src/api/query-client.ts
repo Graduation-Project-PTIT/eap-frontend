@@ -119,6 +119,26 @@ export const queryKeys = {
     conversations: () => [...queryKeys.chat.all, "conversation"] as const,
     conversation: (id: string) => [...queryKeys.chat.conversations(), id] as const,
   },
+
+  // Class queries
+  classes: {
+    all: ["classes"] as const,
+    lists: () => [...queryKeys.classes.all, "list"] as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list: (filters: Record<string, any>) => [...queryKeys.classes.lists(), { filters }] as const,
+    details: () => [...queryKeys.classes.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.classes.details(), id] as const,
+  },
+
+  // Student queries
+  students: {
+    all: ["students"] as const,
+    lists: () => [...queryKeys.students.all, "list"] as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list: (filters: Record<string, any>) => [...queryKeys.students.lists(), { filters }] as const,
+    details: () => [...queryKeys.students.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.students.details(), id] as const,
+  },
 } as const;
 
 // Utility functions for cache management

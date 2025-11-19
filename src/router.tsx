@@ -12,6 +12,9 @@ import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
 import ERDDiagram from "./pages/main/ERDDiagram";
 import Chatbot from "./pages/main/Chatbot";
+import ClassManagement from "./pages/main/ClassManagement";
+import StudentManagement from "./pages/main/StudentManagement";
+import PermissionGuard from "./components/guards/PermissionGuard";
 
 const authRoutes = {
   path: ROUTES.AUTH.ROOT,
@@ -62,6 +65,22 @@ const mainRoutes = {
     {
       path: ROUTES.ERD_DIAGRAM,
       element: <ERDDiagram />,
+    },
+    {
+      path: ROUTES.CLASS_MANAGEMENT.ROOT,
+      element: (
+        <PermissionGuard requiredRole="teacher">
+          <ClassManagement />
+        </PermissionGuard>
+      ),
+    },
+    {
+      path: ROUTES.STUDENT_MANAGEMENT.ROOT,
+      element: (
+        <PermissionGuard requiredRole="teacher">
+          <StudentManagement />
+        </PermissionGuard>
+      ),
     },
   ],
 };

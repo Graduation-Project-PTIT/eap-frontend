@@ -14,9 +14,16 @@ import {
 import { Database, Settings } from "lucide-react";
 import sidebarSettings from "@/constants/sidebarSettings";
 import ROUTES from "@/constants/routes";
+import usePermissions from "@/hooks/use-permissions";
 
 const SidebarNav = () => {
   const location = useLocation();
+  const { hasRole } = usePermissions();
+
+  // Filter sidebar items based on user roles
+  const visibleItems = sidebarSettings.filter(
+    (item) => !item.requiredRole || hasRole(item.requiredRole),
+  );
 
   return (
     <Sidebar>
@@ -37,7 +44,7 @@ const SidebarNav = () => {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {sidebarSettings.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.url}>
                     <Link to={item.url}>

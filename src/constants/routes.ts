@@ -13,6 +13,12 @@ const ROUTES = {
     ROOT: "/mass-evaluation",
     DETAIL: "/mass-evaluation/:batchId",
   },
+  CLASS_MANAGEMENT: {
+    ROOT: "/class-management",
+  },
+  STUDENT_MANAGEMENT: {
+    ROOT: "/student-management",
+  },
   SETTINGS: "/settings",
   ERD_DIAGRAM: "/erd-diagram",
   ERD_DESIGNER: "/erd-designer",

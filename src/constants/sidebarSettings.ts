@@ -1,7 +1,14 @@
-import { Home, Database, Bot, BarChart3, Layers } from "lucide-react";
+import { Home, Database, Bot, BarChart3, Layers, Users, GraduationCap } from "lucide-react";
 import ROUTES from "./routes";
 
-const sidebarSettings = [
+export interface SidebarItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiredRole?: string;
+}
+
+const sidebarSettings: SidebarItem[] = [
   {
     title: "Dashboard",
     url: ROUTES.DASHBOARD,
@@ -26,6 +33,18 @@ const sidebarSettings = [
     title: "ERD Diagram",
     url: ROUTES.ERD_DIAGRAM,
     icon: Database,
+  },
+  {
+    title: "Class Management",
+    url: ROUTES.CLASS_MANAGEMENT.ROOT,
+    icon: Users,
+    requiredRole: "teacher",
+  },
+  {
+    title: "Student Management",
+    url: ROUTES.STUDENT_MANAGEMENT.ROOT,
+    icon: GraduationCap,
+    requiredRole: "teacher",
   },
 ];
 

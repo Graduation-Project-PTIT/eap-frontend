@@ -6,11 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 
 // Service paths - these match the nginx routing configuration
 export const SERVICE_PATHS = {
-  FILE: "/files", // nginx routes /api/files to file service
-  AI: "/ai", // nginx routes /api/ai to evaluation service (all AI-related endpoints)
-  EVALUATION: "/evaluations", // DEPRECATED: use AI instead - nginx routes /api/evaluation to evaluation service
-  CHAT: "/chat", // DEPRECATED: use AI instead - nginx routes /api/chat to evaluation service
-  BACKEND: "", // nginx routes /api to backend service (no prefix needed)
+  FILE: "/files",
+  AI: "/ai",
+  CLASS_SERVICE: "/class-service",
 } as const;
 
 // Create axios instance with default configuration
@@ -110,11 +108,34 @@ const createApiClient = (): AxiosInstance => {
 export const apiClient = createApiClient();
 
 // Helper function to create service-specific clients
-export const createServiceClient = (servicePath: string): AxiosInstance => {
+export const createServiceClient = (
+  servicePath: string,
+  transformResponse?: boolean,
+): AxiosInstance => {
   const client = createApiClient();
 
   // Override the baseURL to include the service path
   client.defaults.baseURL = `${API_BASE_URL}${servicePath}`;
+
+  // Add response transformer for class service to handle pagination structure
+  if (transformResponse) {
+    client.interceptors.response.use(
+      (response: AxiosResponse) => {
+        // Transform the response structure for list endpoints
+        if (response.data?.meta?.pagination) {
+          response.data = {
+            data: response.data.data,
+            pagination: response.data.meta.pagination,
+          };
+        } else if (response.data?.data !== undefined) {
+          // For single item responses, just return the data
+          response.data = response.data.data;
+        }
+        return response;
+      },
+      (error) => Promise.reject(error),
+    );
+  }
 
   return client;
 };
@@ -122,9 +143,7 @@ export const createServiceClient = (servicePath: string): AxiosInstance => {
 // Export service-specific clients
 export const fileServiceClient = createServiceClient(SERVICE_PATHS.FILE);
 export const aiServiceClient = createServiceClient(SERVICE_PATHS.AI);
-export const evaluationServiceClient = createServiceClient(SERVICE_PATHS.EVALUATION); // DEPRECATED: use aiServiceClient
-export const chatClient = createServiceClient(SERVICE_PATHS.CHAT); // DEPRECATED: use aiServiceClient
-export const backendServiceClient = createServiceClient(SERVICE_PATHS.BACKEND);
+export const classServiceClient = createServiceClient(SERVICE_PATHS.CLASS_SERVICE, true);
 
 // Generic API response type
 export interface ApiResponse<T> {
