@@ -8,6 +8,8 @@ interface WelcomeViewProps {
   onSend: () => void;
   isLoading: boolean;
   onSuggestedPromptClick: (prompt: string) => void;
+  enableSearch?: boolean;
+  onEnableSearchChange?: (enabled: boolean) => void;
 }
 
 const SUGGESTED_PROMPTS = [
@@ -23,6 +25,8 @@ const WelcomeView = ({
   onSend,
   isLoading,
   onSuggestedPromptClick,
+  enableSearch,
+  onEnableSearchChange,
 }: WelcomeViewProps) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] px-4 animate-in fade-in duration-500">
@@ -72,6 +76,8 @@ const WelcomeView = ({
           isLoading={isLoading}
           placeholder="Describe your database requirements..."
           className="shadow-lg"
+          enableSearch={enableSearch}
+          onEnableSearchChange={onEnableSearchChange}
         />
       </div>
     </div>

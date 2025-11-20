@@ -15,7 +15,7 @@ export const SERVICE_PATHS = {
 const createApiClient = (): AxiosInstance => {
   const client = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000, // 30 seconds
+    timeout: 1200000, // 20 minutes (1200 seconds) for AI processing
     headers: {
       "Content-Type": "application/json",
     },
