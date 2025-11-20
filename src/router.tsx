@@ -14,6 +14,8 @@ import ERDDiagram from "./pages/main/ERDDiagram";
 import Chatbot from "./pages/main/Chatbot";
 import ClassManagement from "./pages/main/ClassManagement";
 import StudentManagement from "./pages/main/StudentManagement";
+import Profile from "./pages/main/Profile";
+import UserManagement from "./pages/main/UserManagement";
 import PermissionGuard from "./components/guards/PermissionGuard";
 
 const authRoutes = {
@@ -63,6 +65,10 @@ const mainRoutes = {
       element: <Settings />,
     },
     {
+      path: ROUTES.PROFILE,
+      element: <Profile />,
+    },
+    {
       path: ROUTES.ERD_DIAGRAM,
       element: <ERDDiagram />,
     },
@@ -79,6 +85,14 @@ const mainRoutes = {
       element: (
         <PermissionGuard requiredRole="teacher">
           <StudentManagement />
+        </PermissionGuard>
+      ),
+    },
+    {
+      path: ROUTES.USER_MANAGEMENT,
+      element: (
+        <PermissionGuard requiredRole="admin">
+          <UserManagement />
         </PermissionGuard>
       ),
     },

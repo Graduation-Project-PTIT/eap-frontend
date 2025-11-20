@@ -139,6 +139,26 @@ export const queryKeys = {
     details: () => [...queryKeys.students.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.students.details(), id] as const,
   },
+
+  // User queries
+  user: {
+    all: ["user"] as const,
+    profile: () => [...queryKeys.user.all, "profile"] as const,
+    lists: () => [...queryKeys.user.all, "list"] as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list: (filters?: Record<string, any>) => [...queryKeys.user.lists(), { filters }] as const,
+  },
+
+  // Admin user queries
+  adminUsers: {
+    all: ["admin", "users"] as const,
+    lists: () => [...queryKeys.adminUsers.all, "list"] as const,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    list: (filters?: Record<string, any>) =>
+      [...queryKeys.adminUsers.lists(), { filters }] as const,
+    details: () => [...queryKeys.adminUsers.all, "detail"] as const,
+    detail: (id: string) => [...queryKeys.adminUsers.details(), id] as const,
+  },
 } as const;
 
 // Utility functions for cache management

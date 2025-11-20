@@ -10,42 +10,6 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
-        {/* Profile Settings */}
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4">Profile</h2>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Full Name</label>
-              <input
-                type="text"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                placeholder="John Doe"
-                defaultValue="John Doe"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Email</label>
-              <input
-                type="email"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                placeholder="john.doe@example.com"
-                defaultValue="john.doe@example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Bio</label>
-              <textarea
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                placeholder="Tell us about yourself..."
-                defaultValue="Database designer and developer with 5+ years of experience."
-              />
-            </div>
-            <button className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90">
-              Save Changes
-            </button>
-          </div>
-        </div>
-
         {/* Preferences */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4">Preferences</h2>

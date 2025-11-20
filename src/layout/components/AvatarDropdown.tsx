@@ -14,23 +14,21 @@ import ROUTES from "@/constants/routes";
 import { signOut } from "aws-amplify/auth";
 import { useAppDispatch } from "@/redux/hooks";
 import { logout } from "@/redux/features/auth/authSlice";
+import { useMyProfile } from "@/api/services/user-service";
 
 const UserDropdown = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const user = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    avatar: "", // Empty for now, will show fallback
-  };
+  // Fetch real user data
+  const { data: user } = useMyProfile();
 
   const handleSettings = () => {
     navigate(ROUTES.SETTINGS);
   };
 
   const handleProfile = () => {
-    console.log("Navigate to profile");
+    navigate(ROUTES.PROFILE);
   };
 
   const handleLogout = async () => {
@@ -41,27 +39,43 @@ const UserDropdown = () => {
     navigate(ROUTES.AUTH.SIGN_IN);
   };
 
+  // Generate initials from user data
+  const getInitials = () => {
+    if (!user) return "U";
+
+    if (user.firstName && user.lastName) {
+      return (user.firstName[0] + user.lastName[0]).toUpperCase();
+    }
+
+    return user.username[0].toUpperCase();
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    if (!user) return "User";
+
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+
+    return user.username;
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback>
-              {user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
-            </AvatarFallback>
+            <AvatarImage src="" alt={getDisplayName()} />
+            <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">{getDisplayName()}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user?.email || ""}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

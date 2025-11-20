@@ -20,6 +20,8 @@ const ROUTES = {
     ROOT: "/student-management",
   },
   SETTINGS: "/settings",
+  PROFILE: "/profile",
+  USER_MANAGEMENT: "/user-management",
   ERD_DIAGRAM: "/erd-diagram",
   ERD_DESIGNER: "/erd-designer",
   DOCUMENTATION: "/documentation",

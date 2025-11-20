@@ -49,11 +49,11 @@ const usePermissions = () => {
   }, [loadRoles]);
 
   /**
-   * Check if user has a specific role
+   * Check if user has a specific role (case-insensitive)
    */
   const hasRole = useCallback(
     (role: string): boolean => {
-      return roles.includes(role);
+      return roles.some((r) => r.toLowerCase() === role.toLowerCase());
     },
     [roles],
   );
@@ -73,21 +73,25 @@ const usePermissions = () => {
   }, [hasRole]);
 
   /**
-   * Check if user has any of the specified roles
+   * Check if user has any of the specified roles (case-insensitive)
    */
   const hasAnyRole = useCallback(
     (requiredRoles: string[]): boolean => {
-      return requiredRoles.some((role) => roles.includes(role));
+      return requiredRoles.some((requiredRole) =>
+        roles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase()),
+      );
     },
     [roles],
   );
 
   /**
-   * Check if user has all of the specified roles
+   * Check if user has all of the specified roles (case-insensitive)
    */
   const hasAllRoles = useCallback(
     (requiredRoles: string[]): boolean => {
-      return requiredRoles.every((role) => roles.includes(role));
+      return requiredRoles.every((requiredRole) =>
+        roles.some((userRole) => userRole.toLowerCase() === requiredRole.toLowerCase()),
+      );
     },
     [roles],
   );

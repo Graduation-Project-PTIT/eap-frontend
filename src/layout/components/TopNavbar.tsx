@@ -24,6 +24,10 @@ const TopNavbar = () => {
         return "ERD Designer";
       case ROUTES.SETTINGS:
         return "Settings";
+      case ROUTES.PROFILE:
+        return "Profile";
+      case ROUTES.USER_MANAGEMENT:
+        return "User Management";
       case ROUTES.DOCUMENTATION:
         return "Documentation";
       default:

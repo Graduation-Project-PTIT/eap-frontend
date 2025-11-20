@@ -46,6 +46,12 @@ const sidebarSettings: SidebarItem[] = [
     icon: GraduationCap,
     requiredRole: "teacher",
   },
+  {
+    title: "User Management",
+    url: ROUTES.USER_MANAGEMENT,
+    icon: Users,
+    requiredRole: "admin",
+  },
 ];
 
 export default sidebarSettings;

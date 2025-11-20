@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Database, Settings } from "lucide-react";
+import { Database, Settings, User } from "lucide-react";
 import sidebarSettings from "@/constants/sidebarSettings";
 import ROUTES from "@/constants/routes";
 import usePermissions from "@/hooks/use-permissions";
@@ -61,6 +61,14 @@ const SidebarNav = () => {
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={location.pathname === ROUTES.PROFILE}>
+              <Link to={ROUTES.PROFILE}>
+                <User className="h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={location.pathname === ROUTES.SETTINGS}>
               <Link to={ROUTES.SETTINGS}>
