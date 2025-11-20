@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   useRetryTask,
   type MassEvaluationTask,
 } from "@/api/services/mass-evaluation-service";
+import { useClass } from "@/api/services/class-service";
 import BatchStatusBadge from "./components/BatchStatusBadge";
 import TaskDetailDialog from "./components/TaskDetailDialog";
 import ROUTES from "@/constants/routes";
@@ -41,7 +42,25 @@ const BatchDetail = () => {
   const { data: batch, isLoading, error } = useBatch(batchId!);
   const retryTaskMutation = useRetryTask();
 
+  // Fetch class details if batch has classId
+  const {
+    data: classData,
+    isLoading: isLoadingClass,
+    error: classError,
+  } = useClass(batch?.classId || "", !!batch?.classId);
+
   const tasks = batch?.tasks || [];
+
+  // Create a map of studentCode -> studentName
+  const studentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (classData?.data) {
+      classData.data.students.forEach((student) => {
+        map.set(student.code, student.name);
+      });
+    }
+    return map;
+  }, [classData]);
 
   // Calculate completed and total tasks
   const totalTasks = tasks.length;
@@ -52,7 +71,17 @@ const BatchDetail = () => {
   // Filter tasks by status and search query
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-    const matchesSearch = task.fileKey.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Search in fileKey or student info if class is selected
+    let matchesSearch = task.fileKey.toLowerCase().includes(searchQuery.toLowerCase());
+    if (batch?.classId && task.studentCode) {
+      const studentName = studentNameMap.get(task.studentCode) || "";
+      matchesSearch =
+        matchesSearch ||
+        task.studentCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+
     return matchesStatus && matchesSearch;
   });
 
@@ -227,7 +256,9 @@ const BatchDetail = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by file key..."
+                placeholder={
+                  batch?.classId ? "Search by student code or name..." : "Search by file key..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -265,7 +296,9 @@ const BatchDetail = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40%]">File</TableHead>
+                      <TableHead className="w-[40%]">
+                        {batch?.classId ? "Student" : "File"}
+                      </TableHead>
                       <TableHead className="w-[15%]">Status</TableHead>
                       <TableHead className="w-[10%] text-center">Score</TableHead>
                       <TableHead className="w-[15%]">Created</TableHead>
@@ -275,7 +308,28 @@ const BatchDetail = () => {
                   <TableBody>
                     {paginatedTasks.map((task) => (
                       <TableRow key={task.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell className="font-medium w-[40%]">{task.fileKey}</TableCell>
+                        <TableCell className="font-medium w-[40%]">
+                          {batch?.classId && task.studentCode ? (
+                            <div>
+                              <div className="font-medium">
+                                {task.studentCode} -{" "}
+                                {studentNameMap.get(task.studentCode) || "(Not in class)"}
+                              </div>
+                              {isLoadingClass && (
+                                <div className="text-xs text-muted-foreground">
+                                  Loading student info...
+                                </div>
+                              )}
+                              {classError && (
+                                <div className="text-xs text-destructive">
+                                  Failed to load class info
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            task.fileKey
+                          )}
+                        </TableCell>
                         <TableCell className="w-[15%]">
                           <BatchStatusBadge status={task.status} />
                         </TableCell>

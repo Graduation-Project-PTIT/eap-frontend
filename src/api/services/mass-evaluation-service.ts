@@ -13,6 +13,7 @@ export interface MassEvaluationTask {
   workflowRunId: string | null;
   errorMessage: string | null;
   retryCount: number;
+  studentCode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +26,7 @@ export interface MassEvaluationBatch {
   completedTasks: number;
   failedTasks: number;
   averageScore: number | null;
+  classId?: string;
   createdAt: string;
   updatedAt: string;
   tasks?: MassEvaluationTask[];
@@ -33,6 +35,7 @@ export interface MassEvaluationBatch {
 export interface CreateBatchRequest {
   questionDescription: string;
   fileKeys: string[];
+  classId?: string;
 }
 
 export interface CreateBatchResponse {

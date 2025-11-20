@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Upload, X, FileImage, Loader2 } from "lucide-react";
+import { Upload, X, FileImage, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadFile } from "@/api/services/file-service";
 import { toast } from "@/lib/toast";
@@ -8,6 +8,7 @@ interface FileUploaderProps {
   onFilesUploaded: (fileKeys: string[]) => void;
   maxFiles?: number;
   accept?: string;
+  selectedClass?: { id: string; code: string };
 }
 
 interface UploadedFile {
@@ -15,12 +16,55 @@ interface UploadedFile {
   fileKey?: string;
   uploading: boolean;
   error?: string;
+  validationError?: string;
+}
+
+/**
+ * Validate filename format when class is selected
+ * Expected format: {classCode}-{studentCode}-{description}.{ext}
+ */
+function validateFilename(filename: string, classCode: string): string | null {
+  // Remove file extension
+  const lastDotIndex = filename.lastIndexOf(".");
+  if (lastDotIndex === -1) {
+    return "No file extension";
+  }
+
+  const nameWithoutExt = filename.substring(0, lastDotIndex);
+  const parts = nameWithoutExt.split("-");
+
+  // Must have at least 3 parts: classCode, studentCode, and description
+  if (parts.length < 3) {
+    return `Must match format: ${classCode}-{studentCode}-{description}`;
+  }
+
+  const fileClassCode = parts[0];
+  const studentCode = parts[1];
+
+  // Validate class code matches (case-sensitive)
+  if (fileClassCode !== classCode) {
+    return `Class code "${fileClassCode}" doesn't match "${classCode}"`;
+  }
+
+  // Validate student code is not empty
+  if (!studentCode || studentCode.trim() === "") {
+    return "Student code is empty";
+  }
+
+  // Validate description part exists
+  const description = parts.slice(2).join("-");
+  if (!description || description.trim() === "") {
+    return "Description is empty";
+  }
+
+  return null; // Valid
 }
 
 const FileUploader = ({
   onFilesUploaded,
   maxFiles = 20,
   accept = "image/*",
+  selectedClass,
 }: FileUploaderProps) => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -38,36 +82,55 @@ const FileUploader = ({
         return;
       }
 
-      // Add files to state
-      const uploadedFiles: UploadedFile[] = fileArray.map((file) => ({
-        file,
-        uploading: true,
-      }));
+      // Validate filenames if class is selected
+      const uploadedFiles: UploadedFile[] = fileArray.map((file) => {
+        let validationError: string | undefined;
+        if (selectedClass) {
+          const error = validateFilename(file.name, selectedClass.code);
+          if (error) {
+            validationError = error;
+          }
+        }
+        return {
+          file,
+          uploading: !validationError, // Don't upload if validation failed
+          validationError,
+        };
+      });
 
       setFiles((prev) => [...prev, ...uploadedFiles]);
 
-      // Upload files one by one
+      // Upload files one by one (skip files with validation errors)
       const fileKeys: string[] = [];
-      for (let i = 0; i < fileArray.length; i++) {
-        const file = fileArray[i];
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const uploadedFile = uploadedFiles[i];
+
+        // Skip files with validation errors
+        if (uploadedFile.validationError) {
+          toast.error(`${uploadedFile.file.name}: ${uploadedFile.validationError}`);
+          continue;
+        }
+
         try {
-          const result = await uploadFileMutation.mutateAsync({ file });
+          const result = await uploadFileMutation.mutateAsync({ file: uploadedFile.file });
           const fileKey = result.file.id; // Use file ID (UUID) instead of fileName
           fileKeys.push(fileKey);
 
           // Update file state
           setFiles((prev) =>
-            prev.map((f) => (f.file === file ? { ...f, uploading: false, fileKey } : f)),
+            prev.map((f) =>
+              f.file === uploadedFile.file ? { ...f, uploading: false, fileKey } : f,
+            ),
           );
         } catch (error) {
           console.error("Upload error:", error);
           const errorMessage = error instanceof Error ? error.message : "Upload failed";
           setFiles((prev) =>
             prev.map((f) =>
-              f.file === file ? { ...f, uploading: false, error: errorMessage } : f,
+              f.file === uploadedFile.file ? { ...f, uploading: false, error: errorMessage } : f,
             ),
           );
-          toast.error(`Failed to upload ${file.name}`);
+          toast.error(`Failed to upload ${uploadedFile.file.name}`);
         }
       }
 
@@ -76,7 +139,7 @@ const FileUploader = ({
         onFilesUploaded(fileKeys);
       }
     },
-    [files.length, maxFiles, uploadFileMutation, onFilesUploaded],
+    [files.length, maxFiles, uploadFileMutation, onFilesUploaded, selectedClass],
   );
 
   const handleDrop = useCallback(
@@ -141,10 +204,6 @@ const FileUploader = ({
         <label htmlFor="file-upload" className="cursor-pointer">
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-2">Drag & drop ERD images here</p>
-          <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-          <Button type="button" variant="outline" size="sm">
-            Select Files
-          </Button>
           <p className="text-xs text-muted-foreground mt-4">
             Supported: PNG, JPG, JPEG (Max {maxFiles} files)
           </p>
@@ -157,15 +216,34 @@ const FileUploader = ({
           <p className="text-sm font-medium">Selected Files ({files.length}):</p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {files.map((uploadedFile, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg bg-card">
-                <FileImage className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div
+                key={index}
+                className={`flex items-center gap-3 p-3 border rounded-lg ${
+                  uploadedFile.validationError ? "bg-destructive/10 border-destructive" : "bg-card"
+                }`}
+              >
+                {uploadedFile.validationError ? (
+                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                ) : (
+                  <FileImage className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{uploadedFile.file.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(uploadedFile.file.size)}
-                    {uploadedFile.uploading && " - Uploading..."}
-                    {uploadedFile.fileKey && " - Uploaded"}
-                    {uploadedFile.error && ` - ${uploadedFile.error}`}
+                  <p
+                    className={`text-xs ${
+                      uploadedFile.validationError ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {uploadedFile.validationError ? (
+                      uploadedFile.validationError
+                    ) : (
+                      <>
+                        {formatFileSize(uploadedFile.file.size)}
+                        {uploadedFile.uploading && " - Uploading..."}
+                        {uploadedFile.fileKey && " - Uploaded"}
+                        {uploadedFile.error && ` - ${uploadedFile.error}`}
+                      </>
+                    )}
                   </p>
                 </div>
                 {uploadedFile.uploading ? (

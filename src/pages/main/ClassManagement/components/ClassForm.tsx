@@ -27,7 +27,11 @@ import type { CreateClassDto, UpdateClassDto } from "../types";
 
 // Validation schema
 const classFormSchema = z.object({
-  code: z.string().min(1, "Code is required").max(50, "Code must be less than 50 characters"),
+  code: z
+    .string()
+    .min(1, "Code is required")
+    .max(50, "Code must be less than 50 characters")
+    .regex(/^[a-zA-Z_]+$/, "Code must only contain letters and underscores"),
   name: z.string().min(1, "Name is required").max(255, "Name must be less than 255 characters"),
   isActive: z.boolean(),
 });
@@ -125,9 +129,11 @@ const ClassForm = ({ isOpen, onClose, mode, classId }: ClassFormProps) => {
                   <FormItem>
                     <FormLabel>Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="CS101" {...field} />
+                      <Input placeholder="CS_101" {...field} />
                     </FormControl>
-                    <FormDescription>Unique identifier for the class</FormDescription>
+                    <FormDescription>
+                      Unique identifier for the class (only letters and underscores allowed)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
