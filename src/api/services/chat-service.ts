@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 import type { ERDEntity } from "./evaluation-service";
+import { aiServiceClient } from "@/api";
 
 // Types and Interfaces
 export interface ChatMessage {
@@ -27,6 +27,22 @@ export interface ChatResponse {
   schema: { entities: ERDEntity[] };
   ddl: string;
   runId: string;
+  blocked?: boolean; // Flag indicating if schema creation was blocked
+}
+
+export interface Conversation {
+  id: string;
+  conversationTitle: string;
+  status: string;
+  createdAt: string;
+  lastMessageAt: string | null;
+  updatedAt: string;
+}
+
+export interface ConversationListResponse {
+  success: boolean;
+  conversations: Conversation[];
+  total: number;
 }
 
 export interface ConversationHistory {
@@ -39,10 +55,26 @@ export interface ConversationHistory {
     createdAt: string;
     updatedAt: string;
   };
+  messages?: Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    timestamp: string;
+    schema?: { entities: ERDEntity[] };
+    ddl?: string;
+    runId?: string;
+    intent?: string;
+  }>;
 }
 
 // API Functions
 export const chatApi = {
+  // List conversations - GET /ai/conversations
+  listConversations: async (): Promise<ConversationListResponse> => {
+    const response = await aiServiceClient.get<ConversationListResponse>("/conversations");
+    return response.data;
+  },
+
   // Send message - POST /ai/chat
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     const response = await aiServiceClient.post<ChatResponse>("/chat", {
@@ -53,7 +85,7 @@ export const chatApi = {
     return response.data;
   },
 
-  // Get conversation - GET /ai/chat/:conversationId
+  // Get conversation - GET /ai/conversation/:conversationId
   getConversation: async (conversationId: string): Promise<ConversationHistory> => {
     const response = await aiServiceClient.get<ConversationHistory>(`/chat/${conversationId}`);
     return response.data;
@@ -66,6 +98,14 @@ export const chatApi = {
 };
 
 // React Query Hooks
+export const useConversations = () => {
+  return useQuery({
+    queryKey: queryKeys.chat.conversations(),
+    queryFn: chatApi.listConversations,
+    staleTime: 1000 * 60 * 1, // 1 minute
+  });
+};
+
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
 
@@ -75,6 +115,10 @@ export const useSendMessage = () => {
       // Invalidate conversation to refresh data
       queryClient.invalidateQueries({
         queryKey: queryKeys.chat.conversation(data.conversationId),
+      });
+      // Invalidate conversations list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversations(),
       });
     },
   });

@@ -16,6 +16,8 @@ interface ChatViewProps {
   error: string | null;
   onRetry: () => void;
   onSchemaClick: () => void;
+  enableSearch?: boolean;
+  onEnableSearchChange?: (enabled: boolean) => void;
 }
 
 const ChatView = ({
@@ -27,6 +29,8 @@ const ChatView = ({
   error,
   onRetry,
   onSchemaClick,
+  enableSearch,
+  onEnableSearchChange,
 }: ChatViewProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -39,7 +43,7 @@ const ChatView = ({
   }, [messages, isLoading]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] animate-in fade-in duration-300">
+    <div className="flex flex-col h-full animate-in fade-in duration-300">
       {/* Messages Container */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {messages.map((message) => (
@@ -81,6 +85,8 @@ const ChatView = ({
             onSend={onSend}
             isLoading={isLoading}
             placeholder="Type your message..."
+            enableSearch={enableSearch}
+            onEnableSearchChange={onEnableSearchChange}
           />
         </div>
       </div>
