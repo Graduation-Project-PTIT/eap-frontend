@@ -54,8 +54,8 @@ const BatchDetail = () => {
   // Create a map of studentCode -> studentName
   const studentNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    if (classData?.data) {
-      classData.data.students.forEach((student) => {
+    if (classData?.students) {
+      classData.students.forEach((student) => {
         map.set(student.code, student.name);
       });
     }
