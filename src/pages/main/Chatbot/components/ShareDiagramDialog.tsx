@@ -83,7 +83,10 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
 
           <div className="space-y-2">
             <Label htmlFor="visibility">Visibility *</Label>
-            <Select value={visibility} onValueChange={(value: string) => setVisibility(value)}>
+            <Select
+              value={visibility}
+              onValueChange={(value) => setVisibility(value as "public" | "private" | "class")}
+            >
               <SelectTrigger id="visibility">
                 <SelectValue />
               </SelectTrigger>
