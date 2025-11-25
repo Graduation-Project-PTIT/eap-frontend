@@ -16,6 +16,8 @@ import ClassManagement from "./pages/main/ClassManagement";
 import StudentManagement from "./pages/main/StudentManagement";
 import Profile from "./pages/main/Profile";
 import UserManagement from "./pages/main/UserManagement";
+import DiagramGallery from "./pages/main/DiagramGallery";
+import DiagramDetail from "./pages/main/DiagramDetail";
 import PermissionGuard from "./components/guards/PermissionGuard";
 
 const authRoutes = {
@@ -71,6 +73,14 @@ const mainRoutes = {
     {
       path: ROUTES.ERD_DIAGRAM,
       element: <ERDDiagram />,
+    },
+    {
+      path: ROUTES.DIAGRAM_GALLERY,
+      element: <DiagramGallery />,
+    },
+    {
+      path: ROUTES.DIAGRAM_DETAIL,
+      element: <DiagramDetail />,
     },
     {
       path: ROUTES.CLASS_MANAGEMENT.ROOT,

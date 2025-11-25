@@ -2,12 +2,15 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { X, ChevronDown, ChevronUp, Code } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Code, Share2 } from "lucide-react";
 import type { ERDEntity } from "@/api/services/evaluation-service";
 import ERDDiagram from "@/components/erd/diagram-view";
 import getNodesForDiagram from "@/components/erd/utils/getNodesForDiagram";
 import { getEdgesForDiagram } from "@/components/erd/utils/getEdgesForDiagram";
 import getLayoutedElements from "@/components/erd/utils/getLayoutedElements";
+import ShareDiagramDialog from "./ShareDiagramDialog";
+import { useCreateDiagram } from "@/api/services/diagram-service";
+import { toast } from "@/lib/toast";
 
 interface ERDSidebarProps {
   schema: { entities: ERDEntity[] } | null;
@@ -18,6 +21,8 @@ interface ERDSidebarProps {
 
 const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
   const [isDdlOpen, setIsDdlOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const createDiagram = useCreateDiagram();
 
   // Generate diagram nodes and edges
   const { nodes, edges } = useMemo(() => {
@@ -32,6 +37,33 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
     return layouted;
   }, [schema]);
 
+  const handleShare = async (formData: {
+    title: string;
+    description: string;
+    visibility: "public" | "private" | "class";
+    classId?: string;
+  }) => {
+    if (!schema || !ddl) {
+      toast.error("No diagram to share");
+      return;
+    }
+
+    try {
+      await createDiagram.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        schemaJson: schema,
+        ddlScript: ddl,
+        visibility: formData.visibility,
+        classId: formData.classId,
+      });
+      toast.success("Diagram shared successfully!");
+      setIsShareDialogOpen(false);
+    } catch {
+      toast.error("Failed to share diagram. Please try again.");
+    }
+  };
+
   if (!isOpen) return null;
 
   const hasSchema = schema && schema.entities && schema.entities.length > 0;
@@ -44,9 +76,17 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
           <h2 className="text-lg font-semibold">ERD Diagram</h2>
           <p className="text-sm text-muted-foreground mt-1">Generated ERD diagram and DDL</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onToggle}>
-          <X className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasSchema && (
+            <Button variant="outline" size="sm" onClick={() => setIsShareDialogOpen(true)}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onToggle}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
@@ -92,6 +132,14 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
           </div>
         )}
       </div>
+
+      {/* Share Dialog */}
+      <ShareDiagramDialog
+        open={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        onSubmit={handleShare}
+        isLoading={createDiagram.isPending}
+      />
     </div>
   );
 };

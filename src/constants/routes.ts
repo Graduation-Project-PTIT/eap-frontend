@@ -25,6 +25,8 @@ const ROUTES = {
   ERD_DIAGRAM: "/erd-diagram",
   ERD_DESIGNER: "/erd-designer",
   DOCUMENTATION: "/documentation",
+  DIAGRAM_GALLERY: "/diagrams",
+  DIAGRAM_DETAIL: "/diagrams/:id",
 
   NOT_FOUND: "/404",
   FORBIDDEN: "/403",

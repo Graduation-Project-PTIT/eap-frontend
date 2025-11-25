@@ -20,6 +20,11 @@ const sidebarSettings: SidebarItem[] = [
     icon: Bot,
   },
   {
+    title: "Diagram Gallery",
+    url: ROUTES.DIAGRAM_GALLERY,
+    icon: Database,
+  },
+  {
     title: "ERD Evaluation",
     url: ROUTES.ERD_EVALUATION,
     icon: BarChart3,

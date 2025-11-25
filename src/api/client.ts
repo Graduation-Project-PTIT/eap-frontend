@@ -9,6 +9,7 @@ export const SERVICE_PATHS = {
   FILE: "/files",
   AI: "/ai",
   CLASS_SERVICE: "/class-service",
+  DIAGRAM_SERVICE: "/diagram-service",
 } as const;
 
 // Create axios instance with default configuration
@@ -144,6 +145,7 @@ export const createServiceClient = (
 export const fileServiceClient = createServiceClient(SERVICE_PATHS.FILE);
 export const aiServiceClient = createServiceClient(SERVICE_PATHS.AI);
 export const classServiceClient = createServiceClient(SERVICE_PATHS.CLASS_SERVICE, true);
+export const diagramServiceClient = createServiceClient(SERVICE_PATHS.DIAGRAM_SERVICE);
 
 // Generic API response type
 export interface ApiResponse<T> {
