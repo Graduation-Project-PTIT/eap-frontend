@@ -10,7 +10,6 @@ import MassEvaluationList from "./pages/main/MassEvaluation";
 import BatchDetail from "./pages/main/MassEvaluation/BatchDetail";
 import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
-import ERDDiagram from "./pages/main/ERDDiagram";
 import Chatbot from "./pages/main/Chatbot";
 import ClassManagement from "./pages/main/ClassManagement";
 import StudentManagement from "./pages/main/StudentManagement";
@@ -69,10 +68,6 @@ const mainRoutes = {
     {
       path: ROUTES.PROFILE,
       element: <Profile />,
-    },
-    {
-      path: ROUTES.ERD_DIAGRAM,
-      element: <ERDDiagram />,
     },
     {
       path: ROUTES.DIAGRAM_GALLERY,

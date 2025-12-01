@@ -15,15 +15,28 @@ import { Database, Settings, User } from "lucide-react";
 import sidebarSettings from "@/constants/sidebarSettings";
 import ROUTES from "@/constants/routes";
 import usePermissions from "@/hooks/use-permissions";
+import { useMemo } from "react";
 
 const SidebarNav = () => {
   const location = useLocation();
   const { hasRole } = usePermissions();
 
   // Filter sidebar items based on user roles
-  const visibleItems = sidebarSettings.filter(
-    (item) => !item.requiredRole || hasRole(item.requiredRole),
+  const visibleItems = useMemo(
+    () => sidebarSettings.filter((item) => !item.requiredRole || hasRole(item.requiredRole)),
+    [hasRole],
   );
+
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, typeof sidebarSettings> = {};
+    visibleItems.forEach((item) => {
+      if (!groups[item.group]) {
+        groups[item.group] = [];
+      }
+      groups[item.group].push(item);
+    });
+    return groups;
+  }, [visibleItems]);
 
   return (
     <Sidebar>
@@ -40,23 +53,25 @@ const SidebarNav = () => {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <Link to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {Object.entries(groupedItems).map(([group, items]) => (
+          <SidebarGroup key={group}>
+            <SidebarGroupLabel>{group}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <Link to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>

@@ -6,6 +6,7 @@ export interface SidebarItem {
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   requiredRole?: string;
+  group: string;
 }
 
 const sidebarSettings: SidebarItem[] = [
@@ -13,49 +14,52 @@ const sidebarSettings: SidebarItem[] = [
     title: "Dashboard",
     url: ROUTES.DASHBOARD,
     icon: Home,
+    group: "Navigation",
   },
   {
     title: "Chatbot",
     url: ROUTES.CHATBOT,
     icon: Bot,
+    group: "User",
   },
   {
     title: "Diagram Gallery",
     url: ROUTES.DIAGRAM_GALLERY,
     icon: Database,
+    group: "User",
   },
   {
     title: "ERD Evaluation",
     url: ROUTES.ERD_EVALUATION,
     icon: BarChart3,
+    group: "User",
   },
   {
     title: "Mass Evaluation",
     url: ROUTES.MASS_EVALUATION.ROOT,
     icon: Layers,
-  },
-  {
-    title: "ERD Diagram",
-    url: ROUTES.ERD_DIAGRAM,
-    icon: Database,
+    group: "Teacher",
   },
   {
     title: "Class Management",
     url: ROUTES.CLASS_MANAGEMENT.ROOT,
     icon: Users,
     requiredRole: "teacher",
+    group: "Teacher",
   },
   {
     title: "Student Management",
     url: ROUTES.STUDENT_MANAGEMENT.ROOT,
     icon: GraduationCap,
     requiredRole: "teacher",
+    group: "Teacher",
   },
   {
     title: "User Management",
     url: ROUTES.USER_MANAGEMENT,
     icon: Users,
     requiredRole: "admin",
+    group: "Admin",
   },
 ];
 

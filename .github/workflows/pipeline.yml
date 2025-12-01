@@ -46,21 +46,25 @@ jobs:
           # Push the image
           docker push $FRONTEND_IMAGE
 
-      - name: Send repository dispatch event
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_PAT }}
+      - name: Build and store frontend artifacts
         run: |
-          REPO_OWNER="${{ github.repository_owner }}"
-          REPO_NAME="eap-infra"
-          EVENT_TYPE="deploy_infra"
+          pnpm install
+          pnpm build
+        env:
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_USER_POOL_CLIENT_ID: ${{ secrets.VITE_COGNITO_USER_POOL_CLIENT_ID }}
+          VITE_USER_POOL_DOMAIN: ${{ secrets.VITE_USER_POOL_DOMAIN }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
-          curl -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/dispatches \
-            -d "{\"event_type\": \"$EVENT_TYPE\"}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::851725421927:role/GitHubActionsRole
+          aws-region: ap-southeast-1
+          role-session-name: GitHubActionsSession
+
+      - name: Sync to s3
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
   send-notifications:
     needs: build-and-push
