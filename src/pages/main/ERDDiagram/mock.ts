@@ -1,9 +1,10 @@
-import type { ERDEntity } from "@/api";
+import type { ERDEntity } from "@/components/erd/erd-diagram-view/types";
 
 const mockData: { entities: ERDEntity[] } = {
   entities: [
     {
       name: "Route",
+      isWeakEntity: false,
       attributes: [
         {
           name: "id",
@@ -12,6 +13,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: true,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "fare",
@@ -20,11 +24,15 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },
     {
       name: "Stop",
+      isWeakEntity: false,
       attributes: [
         {
           name: "id",
@@ -33,6 +41,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: true,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "name",
@@ -41,6 +52,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "terminus",
@@ -49,11 +63,15 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },
     {
       name: "Schedule",
+      isWeakEntity: false,
       attributes: [
         {
           name: "Routeid",
@@ -64,6 +82,10 @@ const mockData: { entities: ERDEntity[] } = {
           nullable: false,
           foreignKeyTable: "Route",
           relationType: "many-to-one",
+          relationshipName: "has",
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "id",
@@ -72,6 +94,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: true,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "departure",
@@ -80,6 +105,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "arrival",
@@ -88,11 +116,15 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },
     {
       name: "Route_Stop",
+      isWeakEntity: false,
       attributes: [
         {
           name: "Routeid",
@@ -103,6 +135,10 @@ const mockData: { entities: ERDEntity[] } = {
           nullable: false,
           foreignKeyTable: "Route",
           relationType: "many-to-one",
+          relationshipName: "contains",
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "Stopid",
@@ -113,11 +149,16 @@ const mockData: { entities: ERDEntity[] } = {
           nullable: false,
           foreignKeyTable: "Stop",
           relationType: "many-to-one",
+          relationshipName: "located_at",
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },
     {
       name: "Bus",
+      isWeakEntity: false,
       attributes: [
         {
           name: "Scheduleid",
@@ -128,6 +169,10 @@ const mockData: { entities: ERDEntity[] } = {
           nullable: false,
           foreignKeyTable: "Schedule",
           relationType: "many-to-one",
+          relationshipName: "assigned_to",
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "vehicle",
@@ -136,6 +181,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: true,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "fleet_id",
@@ -144,6 +192,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "last_main",
@@ -152,11 +203,15 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },
     {
       name: "Driver",
+      isWeakEntity: false,
       attributes: [
         {
           name: "Busvehicle",
@@ -167,6 +222,10 @@ const mockData: { entities: ERDEntity[] } = {
           nullable: false,
           foreignKeyTable: "Bus",
           relationType: "one-to-one",
+          relationshipName: "drives",
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "id",
@@ -175,6 +234,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: true,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "name",
@@ -183,6 +245,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
         {
           name: "employ_date",
@@ -191,6 +256,9 @@ const mockData: { entities: ERDEntity[] } = {
           foreignKey: false,
           unique: false,
           nullable: false,
+          isMultivalued: false,
+          isDerived: false,
+          isComposite: false,
         },
       ],
     },

@@ -1,14 +1,19 @@
 import { useState, useCallback } from "react";
-import { ReactFlow, applyNodeChanges, applyEdgeChanges } from "@xyflow/react";
+import { ReactFlow, applyNodeChanges, applyEdgeChanges, Background, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { type Node, type Edge, type OnNodesChange, type OnEdgesChange } from "@xyflow/react";
-import type { ERDNodeData } from "./ERDNode";
-import type { ERDEdgeData } from "./ERDEdge";
+import { erdNodeTypes } from "./ERDNode";
+import ERDEdge from "./ERDEdge";
+import type { ERDNodeData, ERDEdgeData } from "./types";
 
 interface ERDDiagramProps {
   initialNodes: Node<ERDNodeData>[];
   initialEdges: Edge<ERDEdgeData>[];
 }
+
+const edgeTypes = {
+  erdEdge: ERDEdge,
+};
 
 const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
   const [nodes, setNodes] = useState(initialNodes);
@@ -31,7 +36,13 @@ const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-      />
+        nodeTypes={erdNodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
     </div>
   );
 };

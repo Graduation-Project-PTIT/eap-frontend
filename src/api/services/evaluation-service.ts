@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 
-// Types based on the Mastra evaluation workflow
 export interface ERDEntity {
   name: string;
   attributes: Array<{
@@ -19,13 +18,8 @@ export interface ERDEntity {
 }
 
 export interface ERDExtractionResult {
-  // JSON format - structured data
   entities: ERDEntity[];
-
-  // DDL format - PostgreSQL script
   ddlScript: string;
-
-  // Mermaid format - Mermaid ERD diagram syntax
   mermaidDiagram: string;
 }
 
@@ -35,11 +29,11 @@ export interface EvaluationWorkflowResult {
 }
 
 export interface EvaluationRequest {
-  fileKey: string; // File ID/key for the ERD image
-  questionDescription: string; // Description of the evaluation objective
-  userToken?: string; // User access token for file authentication
-  workflowMode?: "standard" | "sync"; // Workflow mode: standard (with refinement) or sync (direct evaluation)
-  preferredFormat?: "json" | "ddl" | "mermaid"; // Format for evaluation (default: json)
+  fileKey: string;
+  questionDescription: string;
+  userToken?: string;
+  workflowMode?: "standard" | "sync";
+  preferredFormat?: "json" | "ddl" | "mermaid";
 }
 
 // Database evaluation record type from backend
