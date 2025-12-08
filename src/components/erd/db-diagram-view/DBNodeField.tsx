@@ -12,7 +12,7 @@ import {
   RIGHT_HANDLE_ID_PREFIX,
 } from "./handle-constants";
 
-export interface ERDNodeFieldProps {
+export interface DBNodeFieldProps {
   tableNodeId: string;
   entityName: string;
   attribute: ERDEntity["attributes"][0];
@@ -22,7 +22,7 @@ export interface ERDNodeFieldProps {
   readonly?: boolean;
 }
 
-export const ERDNodeField: React.FC<ERDNodeFieldProps> = React.memo(
+export const DBNodeField: React.FC<DBNodeFieldProps> = React.memo(
   ({
     tableNodeId,
     entityName,
@@ -188,4 +188,4 @@ export const ERDNodeField: React.FC<ERDNodeFieldProps> = React.memo(
   },
 );
 
-ERDNodeField.displayName = "ERDNodeField";
+DBNodeField.displayName = "DBNodeField";

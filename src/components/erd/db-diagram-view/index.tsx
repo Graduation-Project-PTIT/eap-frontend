@@ -12,33 +12,33 @@ import {
 } from "@xyflow/react";
 import { type Node, type Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import ERDNode, { type ERDNodeData } from "@/components/erd/diagram-view/ERDNode";
-import ERDEdge, { type ERDEdgeData } from "@/components/erd/diagram-view/ERDEdge";
-import createEdge from "../utils/createEdge";
+import DBNode, { type DBNodeData } from "@/components/erd/db-diagram-view/DBNode";
+import DBEdge, { type DBEdgeData } from "@/components/erd/db-diagram-view/DBEdge";
+import createEdge from "./utils/createDBDiagramEdge";
 
-interface ERDDiagramProps {
-  initialNodes: Node<ERDNodeData>[];
-  initialEdges: Edge<ERDEdgeData>[];
+interface DBDiagramProps {
+  initialNodes: Node<DBNodeData>[];
+  initialEdges: Edge<DBEdgeData>[];
 }
 
 const nodeTypes = {
-  erdNode: ERDNode,
+  dbNode: DBNode,
 };
 
 const edgeTypes = {
-  erdEdge: ERDEdge,
+  dbEdge: DBEdge,
 };
 
-const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
+const DBDiagram = ({ initialNodes, initialEdges }: DBDiagramProps) => {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
 
-  const onNodesChange: OnNodesChange<Node<ERDNodeData>> = useCallback(
+  const onNodesChange: OnNodesChange<Node<DBNodeData>> = useCallback(
     (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
     [],
   );
 
-  const onEdgesChange: OnEdgesChange<Edge<ERDEdgeData>> = useCallback(
+  const onEdgesChange: OnEdgesChange<Edge<DBEdgeData>> = useCallback(
     (changes) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
     [],
   );
@@ -147,4 +147,4 @@ const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
     </div>
   );
 };
-export default ERDDiagram;
+export default DBDiagram;

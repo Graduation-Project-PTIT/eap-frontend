@@ -4,10 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { X, ChevronDown, ChevronUp, Code, Share2 } from "lucide-react";
 import type { ERDEntity } from "@/api/services/evaluation-service";
-import ERDDiagram from "@/components/erd/diagram-view";
-import getNodesForDiagram from "@/components/erd/utils/getNodesForDiagram";
-import { getEdgesForDiagram } from "@/components/erd/utils/getEdgesForDiagram";
-import getLayoutedElements from "@/components/erd/utils/getLayoutedElements";
+import ERDDiagram from "@/components/erd/db-diagram-view";
+import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
+import { getEdgesForDBDiagram } from "@/components/erd/db-diagram-view/utils/getEdgesForDBDiagram";
+import getLayoutedElementsForDBDiagram from "@/components/erd/db-diagram-view/utils/getLayoutedElementsForDBDiagram";
 import ShareDiagramDialog from "./ShareDiagramDialog";
 import { useCreateDiagram } from "@/api/services/diagram-service";
 import { toast } from "@/lib/toast";
@@ -30,9 +30,9 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
       return { nodes: [], edges: [] };
     }
 
-    const initialNodes = getNodesForDiagram(schema.entities);
-    const initialEdges = getEdgesForDiagram(initialNodes);
-    const layouted = getLayoutedElements(initialNodes, initialEdges);
+    const initialNodes = getNodesForDBDiagram(schema.entities);
+    const initialEdges = getEdgesForDBDiagram(initialNodes);
+    const layouted = getLayoutedElementsForDBDiagram(initialNodes, initialEdges);
 
     return layouted;
   }, [schema]);

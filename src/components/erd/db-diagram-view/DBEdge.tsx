@@ -11,14 +11,13 @@ import {
 } from "@xyflow/react";
 import { RIGHT_HANDLE_ID_PREFIX } from "./handle-constants";
 
-export type ERDEdgeData = {
+export type DBEdgeData = {
   sourceLabel: string;
   targetLabel: string;
 };
 
-export type ERDEdgeProps = Edge<ERDEdgeData, "erdEdge">;
+export type DBEdgeProps = Edge<DBEdgeData, "dbEdge">;
 
-// this is a little helper component to render the actual edge label
 function EdgeLabel({ transform, label }: { transform: string; label: string }) {
   return (
     <div
@@ -44,7 +43,7 @@ function EdgeLabel({ transform, label }: { transform: string; label: string }) {
   );
 }
 
-const ERDEdge = ({
+const DBEdge = ({
   id,
   sourceX,
   sourceY,
@@ -55,7 +54,7 @@ const ERDEdge = ({
   data,
   style,
   selected,
-}: EdgeProps<ERDEdgeProps>) => {
+}: EdgeProps<DBEdgeProps>) => {
   const { getInternalNode, getEdge } = useReactFlow();
   const edges = useStore((store) => store.edges);
 
@@ -190,4 +189,4 @@ const ERDEdge = ({
   );
 };
 
-export default ERDEdge;
+export default DBEdge;

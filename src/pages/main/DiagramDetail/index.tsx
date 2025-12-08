@@ -8,10 +8,10 @@ import { ArrowLeft, Eye, Calendar, Edit, Trash2, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/lib/toast";
 import VoteButtons from "./components/VoteButtons";
-import ERDDiagram from "@/components/erd/diagram-view";
-import getNodesForDiagram from "@/components/erd/utils/getNodesForDiagram";
-import { getEdgesForDiagram } from "@/components/erd/utils/getEdgesForDiagram";
-import getLayoutedElements from "@/components/erd/utils/getLayoutedElements";
+import ERDDiagram from "@/components/erd/db-diagram-view";
+import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
+import { getEdgesForDBDiagram } from "@/components/erd/db-diagram-view/utils/getEdgesForDBDiagram";
+import getLayoutedElementsForDBDiagram from "@/components/erd/db-diagram-view/utils/getLayoutedElementsForDBDiagram";
 import { useMemo, useState } from "react";
 import { getCurrentUser } from "aws-amplify/auth";
 import {
@@ -50,8 +50,8 @@ const DiagramDetail = () => {
     if (!diagram?.schemaJson?.entities) {
       return { nodes: [], edges: [] };
     }
-    const initialNodes = getNodesForDiagram(diagram.schemaJson.entities);
-    return getLayoutedElements(initialNodes, getEdgesForDiagram(initialNodes));
+    const initialNodes = getNodesForDBDiagram(diagram.schemaJson.entities);
+    return getLayoutedElementsForDBDiagram(initialNodes, getEdgesForDBDiagram(initialNodes));
   }, [diagram]);
 
   const handleDelete = async () => {

@@ -1,10 +1,10 @@
 import type { Node, Edge } from "@xyflow/react";
-import type { ERDNodeData } from "../diagram-view/ERDNode";
-import createEdge from "./createEdge";
-import type { ERDEdgeData } from "../diagram-view/ERDEdge";
+import type { DBNodeData } from "../DBNode";
+import createEdge from "./createDBDiagramEdge";
+import type { DBEdgeData } from "../DBEdge";
 
-export const getEdgesForDiagram = (nodes: Node<ERDNodeData>[]) => {
-  const edges: Edge<ERDEdgeData>[] = [];
+export const getEdgesForDBDiagram = (nodes: Node<DBNodeData>[]) => {
+  const edges: Edge<DBEdgeData>[] = [];
 
   nodes.forEach((sourceNode) => {
     const entity = sourceNode.data.entity;

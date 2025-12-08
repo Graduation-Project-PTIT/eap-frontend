@@ -1,8 +1,8 @@
 import type { ERDEntity } from "@/api";
 import type { Node } from "@xyflow/react";
-import type { ERDNodeData } from "../diagram-view/ERDNode";
+import type { ERDNodeData } from "../ERDNode";
 
-const getNodesForDiagram = (entities: ERDEntity[]): Node<ERDNodeData>[] => {
+export const getNodesForERDDiagram = (entities: ERDEntity[]): Node<ERDNodeData>[] => {
   return entities.map((entity, index) => ({
     id: `n${index + 1}`,
     position: { x: 0, y: 0 },
@@ -10,5 +10,3 @@ const getNodesForDiagram = (entities: ERDEntity[]): Node<ERDNodeData>[] => {
     type: "erdNode",
   }));
 };
-
-export default getNodesForDiagram;

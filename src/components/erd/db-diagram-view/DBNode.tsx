@@ -6,26 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Database, Edit3 } from "lucide-react";
 import TableEditDialog from "./TableEditDialog";
-import { ERDNodeField } from "./ERDNodeField";
+import { DBNodeField } from "./DBNodeField";
 
-export type ERDNodeData = {
+export type DBNodeData = {
   entity: ERDEntity;
   isEditable: boolean;
 };
 
-type ERDNodeProps = Node<{ entity: ERDEntity; isEditable: boolean }, "erdNode">;
+type DBNodeProps = Node<{ entity: ERDEntity; isEditable: boolean }, "dbNode">;
 
-const ERDNode = ({ data, selected, id }: NodeProps<ERDNodeProps>) => {
+const DBNode = ({ data, selected, id }: NodeProps<DBNodeProps>) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const { entity, isEditable } = data;
 
-  // Determine if node is focused (selected or hovering)
   const focused = useMemo(() => selected || isHovering, [selected, isHovering]);
 
   const handleSave = (updatedEntity: ERDEntity) => {
-    // This will be handled by the parent component
-    // For now, we just close the dialog
     console.log("Updated entity:", updatedEntity);
   };
 
@@ -74,7 +71,7 @@ const ERDNode = ({ data, selected, id }: NodeProps<ERDNodeProps>) => {
                 return 0;
               })
               .map((attribute, index) => (
-                <ERDNodeField
+                <DBNodeField
                   key={`${entity.name}-${attribute.name}-${attribute.type}-${index}`}
                   tableNodeId={id}
                   entityName={entity.name}
@@ -101,4 +98,4 @@ const ERDNode = ({ data, selected, id }: NodeProps<ERDNodeProps>) => {
   );
 };
 
-export default ERDNode;
+export default DBNode;

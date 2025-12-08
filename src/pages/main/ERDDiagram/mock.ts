@@ -1,4 +1,6 @@
-const mockData = {
+import type { ERDEntity } from "@/api";
+
+const mockData: { entities: ERDEntity[] } = {
   entities: [
     {
       name: "Route",

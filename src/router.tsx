@@ -18,6 +18,7 @@ import UserManagement from "./pages/main/UserManagement";
 import DiagramGallery from "./pages/main/DiagramGallery";
 import DiagramDetail from "./pages/main/DiagramDetail";
 import PermissionGuard from "./components/guards/PermissionGuard";
+import ERDDiagram from "./pages/main/ERDDiagram";
 
 const authRoutes = {
   path: ROUTES.AUTH.ROOT,
@@ -52,6 +53,10 @@ const mainRoutes = {
     {
       path: ROUTES.ERD_EVALUATION,
       element: <ERDEvaluation />,
+    },
+    {
+      path: ROUTES.ERD_DESIGNER,
+      element: <ERDDiagram />,
     },
     {
       path: ROUTES.MASS_EVALUATION.ROOT,

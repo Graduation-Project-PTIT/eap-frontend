@@ -1,20 +1,20 @@
 import dagre from "@dagrejs/dagre";
 import type { Node, Edge } from "@xyflow/react";
-import type { ERDNodeData } from "../diagram-view/ERDNode";
-import type { ERDEdgeData } from "../diagram-view/ERDEdge";
+import type { DBNodeData } from "../DBNode";
+import type { DBEdgeData } from "../DBEdge";
 
 const nodeWidth = 360;
 const nodeHeight = 180;
 
 const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
 
-const getLayoutedElements = (
-  nodes: Node<ERDNodeData>[],
-  edges: Edge<ERDEdgeData>[],
+const getLayoutedElementsForDBDiagram = (
+  nodes: Node<DBNodeData>[],
+  edges: Edge<DBEdgeData>[],
   direction = "LR",
 ): {
-  nodes: Node<ERDNodeData>[];
-  edges: Edge<ERDEdgeData>[];
+  nodes: Node<DBNodeData>[];
+  edges: Edge<DBEdgeData>[];
 } => {
   const isHorizontal = direction === "LR";
   dagreGraph.setGraph({ rankdir: direction });
@@ -41,10 +41,10 @@ const getLayoutedElements = (
       },
     };
 
-    return newNode as Node<ERDNodeData>;
+    return newNode as Node<DBNodeData>;
   });
 
   return { nodes: newNodes, edges };
 };
 
-export default getLayoutedElements;
+export default getLayoutedElementsForDBDiagram;

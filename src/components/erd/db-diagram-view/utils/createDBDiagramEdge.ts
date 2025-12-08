@@ -1,19 +1,19 @@
 import type { Node } from "@xyflow/react";
-import type { ERDNodeData } from "../diagram-view/ERDNode";
-import type { ERDAttribute } from "../ERDTableTabs";
-import { createLeftHandleId, createTargetHandleId } from "../diagram-view/handle-constants";
-import type { ERDEdgeData } from "../diagram-view/ERDEdge";
+import type { DBNodeData } from "../DBNode";
+import type { ERDAttribute } from "../../ERDTableTabs";
+import { createLeftHandleId, createTargetHandleId } from "../handle-constants";
+import type { DBEdgeData } from "../DBEdge";
 
-interface CreateEdgeParams {
-  sourceNode: Node<ERDNodeData>;
-  targetNode: Node<ERDNodeData>;
+interface CreateDBDiagramEdgeParams {
+  sourceNode: Node<DBNodeData>;
+  targetNode: Node<DBNodeData>;
   sourceAttribute: ERDAttribute;
   targetAttribute: ERDAttribute;
   sourceHandleId?: string;
   targetHandleId?: string;
 }
 
-const getRelationMultiLabel = (relationType: ERDAttribute["relationType"]): ERDEdgeData => {
+const getRelationMultiLabel = (relationType: ERDAttribute["relationType"]): DBEdgeData => {
   switch (relationType) {
     case "one-to-one":
       return {
@@ -38,14 +38,14 @@ const getRelationMultiLabel = (relationType: ERDAttribute["relationType"]): ERDE
   }
 };
 
-const createEdge = ({
+const createDBDiagramEdge = ({
   sourceNode,
   targetNode,
   targetAttribute,
   sourceAttribute,
   sourceHandleId,
   targetHandleId,
-}: CreateEdgeParams) => {
+}: CreateDBDiagramEdgeParams) => {
   if (!sourceHandleId && !targetHandleId) {
     sourceHandleId = createLeftHandleId(
       sourceNode.data.entity.name,
@@ -67,7 +67,7 @@ const createEdge = ({
     target: targetNode.id,
     sourceHandle: sourceHandleId,
     targetHandle: targetHandleId,
-    type: "erdEdge",
+    type: "dbEdge",
     data: getRelationMultiLabel(sourceAttribute.relationType),
     style: {
       stroke: "#333",
@@ -77,4 +77,4 @@ const createEdge = ({
   };
 };
 
-export default createEdge;
+export default createDBDiagramEdge;
