@@ -1,20 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { PanelRightOpen, AlertCircle } from "lucide-react";
+import { PanelRightOpen } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useSendMessage, useConversation } from "@/api/services/chat-service";
+  useSendMessage,
+  useConversation,
+  useUpdateConversationSchema,
+} from "@/api/services/chat-service";
 import type { ChatMessage } from "@/api/services/chat-service";
-import type { ERDEntity } from "@/api/services/evaluation-service";
+import { useSchemaState } from "./hooks/useSchemaState";
+import { toast } from "@/lib/toast";
 import WelcomeView from "./components/WelcomeView";
 import ChatView from "./components/ChatView";
 import ERDSidebar from "./components/ERDSidebar";
@@ -40,10 +35,21 @@ const Chatbot = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showHistory, setShowHistory] = useState(true); // Show history sidebar by default
-  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
-  const [currentSchema, setCurrentSchema] = useState<{ entities: ERDEntity[] } | null>(null);
   const [currentDdl, setCurrentDdl] = useState<string | null>(null);
   const [enableSearch, setEnableSearch] = useState(true); // Enable web search by default
+
+  // API hooks
+  const sendMessage = useSendMessage();
+  const { data: conversationData } = useConversation(conversationId, !!conversationId);
+  const updateConversationSchema = useUpdateConversationSchema();
+
+  // Schema state management with dirty tracking
+  const {
+    schema: currentSchema,
+    isDirty: isSchemaDirty,
+    updateEntity,
+    resetDirty,
+  } = useSchemaState(conversationData?.schema || null);
 
   // Reset state when navigating to new conversation
   useEffect(() => {
@@ -54,7 +60,6 @@ const Chatbot = () => {
       setMessages([]);
       setInputValue("");
       setError(null);
-      setCurrentSchema(null);
       setCurrentDdl(null);
       setShowSidebar(false);
     } else {
@@ -62,10 +67,6 @@ const Chatbot = () => {
       setLocalConversationId(conversationId);
     }
   }, [conversationId]);
-
-  // API hooks
-  const sendMessage = useSendMessage();
-  const { data: conversationData } = useConversation(conversationId, !!conversationId);
 
   // Load conversation history on mount
   useEffect(() => {
@@ -84,10 +85,12 @@ const Chatbot = () => {
         setMessages(loadedMessages);
       }
 
-      // Set the schema if available
-      if (conversationData.schema) {
-        setCurrentSchema(conversationData.schema);
-        // Find the latest DDL from messages (iterate backwards without mutating)
+      // Load DDL - prioritize currentDdl from conversation, fallback to latest message
+      if (conversationData.currentDdl) {
+        // Use DDL from conversation (most up-to-date after schema updates)
+        setCurrentDdl(conversationData.currentDdl);
+      } else if (conversationData.messages) {
+        // Fallback: Find the latest DDL from messages
         const lastMessageWithDdl = conversationData.messages
           ?.slice()
           .reverse()
@@ -98,6 +101,33 @@ const Chatbot = () => {
       }
     }
   }, [conversationData]);
+
+  // Handle save schema
+  const handleSaveSchema = async () => {
+    if (!conversationId || !currentSchema || !isSchemaDirty) return;
+
+    try {
+      const response = await updateConversationSchema.mutateAsync({
+        conversationId,
+        schema: currentSchema,
+        regenerateDDL: true,
+      });
+
+      if (response.ddl) {
+        setCurrentDdl(response.ddl);
+      }
+
+      resetDirty();
+      toast.success("Schema saved", {
+        description: "Your schema changes have been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to save schema:", error);
+      toast.error("Save failed", {
+        description: "Failed to save schema. Please try again.",
+      });
+    }
+  };
 
   // Handle sending a message
   const handleSend = async () => {
@@ -123,14 +153,11 @@ const Chatbot = () => {
       const assistantMessage = createAssistantMessage(response);
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Update current schema and DDL (only if not blocked)
+      // Update current DDL (only if not blocked)
       if (!response.blocked && response.schema && response.schema.entities.length > 0) {
-        setCurrentSchema(response.schema);
         setCurrentDdl(response.ddl);
-      } else if (response.blocked) {
-        // Show dialog that creation was blocked
-        setShowBlockedDialog(true);
       }
+      // Note: If blocked, the assistant message with the explanation is already added above
     } catch (err) {
       console.error("Chat error:", err);
       setError("Something went wrong. Please try again.");
@@ -218,41 +245,12 @@ const Chatbot = () => {
           ddl={currentDdl}
           isOpen={showSidebar}
           onToggle={() => setShowSidebar(!showSidebar)}
+          onEntityUpdate={updateEntity}
+          onSaveSchema={handleSaveSchema}
+          isSchemaDirty={isSchemaDirty}
+          isSaving={updateConversationSchema.isPending}
         />
       </div>
-
-      {/* Blocked Schema Creation Dialog */}
-      <AlertDialog open={showBlockedDialog} onOpenChange={setShowBlockedDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              Cannot Create New Schema
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3 pt-2">
-              <p>
-                This conversation already has an existing database schema. To keep conversations
-                organized and focused:
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Each conversation specializes in one domain/schema</li>
-                <li>Easier to track schema evolution</li>
-                <li>Cleaner context for better AI responses</li>
-              </ul>
-              <p className="font-medium">
-                Please start a <strong>New Conversation</strong> for your new schema design, or
-                modify the existing schema in this conversation.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Stay Here</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/chat")}>
-              Start New Conversation
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

@@ -11,19 +11,22 @@ import { DBNodeField } from "./DBNodeField";
 export type DBNodeData = {
   entity: ERDEntity;
   isEditable: boolean;
+  onEntityUpdate?: (entity: ERDEntity) => void;
 };
 
-type DBNodeProps = Node<{ entity: ERDEntity; isEditable: boolean }, "dbNode">;
+type DBNodeProps = Node<DBNodeData, "dbNode">;
 
 const DBNode = ({ data, selected, id }: NodeProps<DBNodeProps>) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const { entity, isEditable } = data;
+  const { entity, isEditable, onEntityUpdate } = data;
 
   const focused = useMemo(() => selected || isHovering, [selected, isHovering]);
 
   const handleSave = (updatedEntity: ERDEntity) => {
-    console.log("Updated entity:", updatedEntity);
+    if (onEntityUpdate) {
+      onEntityUpdate(updatedEntity);
+    }
   };
 
   return (

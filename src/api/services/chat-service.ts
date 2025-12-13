@@ -50,6 +50,7 @@ export interface ConversationHistory {
   conversationId: string;
   exists: boolean;
   schema: { entities: ERDEntity[] } | null;
+  currentDdl?: string | null; // Current DDL script from conversation
   thread: {
     title: string;
     createdAt: string;
@@ -94,6 +95,19 @@ export const chatApi = {
   // Reset conversation - POST /ai/chat/reset
   resetConversation: async (conversationId: string): Promise<void> => {
     await aiServiceClient.post("/chat/reset", { conversationId });
+  },
+
+  // Update conversation schema - PUT /ai/chat/:conversationId/schema
+  updateConversationSchema: async (
+    conversationId: string,
+    schema: { entities: ERDEntity[] },
+    regenerateDDL = true,
+  ): Promise<ChatResponse> => {
+    const response = await aiServiceClient.put<ChatResponse>(`/chat/${conversationId}/schema`, {
+      schemaJson: schema,
+      regenerateDDL,
+    });
+    return response.data;
   },
 };
 
@@ -142,6 +156,33 @@ export const useResetConversation = () => {
       // Invalidate conversation to refresh data
       queryClient.invalidateQueries({
         queryKey: queryKeys.chat.conversation(conversationId),
+      });
+    },
+  });
+};
+
+export const useUpdateConversationSchema = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      schema,
+      regenerateDDL,
+    }: {
+      conversationId: string;
+      schema: { entities: ERDEntity[] };
+      regenerateDDL?: boolean;
+    }) => chatApi.updateConversationSchema(conversationId, schema, regenerateDDL),
+
+    onSuccess: (data) => {
+      // Invalidate conversation to refresh data
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversation(data.conversationId),
+      });
+      // Invalidate conversations list to update last modified timestamp
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.conversations(),
       });
     },
   });

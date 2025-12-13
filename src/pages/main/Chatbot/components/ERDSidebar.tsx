@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { X, ChevronDown, ChevronUp, Code, Share2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { X, Share2, Save, Loader2 } from "lucide-react";
+import Editor from "@monaco-editor/react";
 import type { ERDEntity } from "@/api/services/evaluation-service";
 import ERDDiagram from "@/components/erd/db-diagram-view";
 import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
@@ -17,10 +19,22 @@ interface ERDSidebarProps {
   ddl: string | null;
   isOpen: boolean;
   onToggle: () => void;
+  onEntityUpdate?: (entity: ERDEntity) => void;
+  onSaveSchema?: () => void;
+  isSchemaDirty?: boolean;
+  isSaving?: boolean;
 }
 
-const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
-  const [isDdlOpen, setIsDdlOpen] = useState(false);
+const ERDSidebar = ({
+  schema,
+  ddl,
+  isOpen,
+  onToggle,
+  onEntityUpdate,
+  onSaveSchema,
+  isSchemaDirty = false,
+  isSaving = false,
+}: ERDSidebarProps) => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const createDiagram = useCreateDiagram();
 
@@ -73,10 +87,37 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">ERD Diagram</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">ERD Diagram</h2>
+            {isSchemaDirty && (
+              <Badge
+                variant="secondary"
+                className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300"
+              >
+                Unsaved changes
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground mt-1">Generated ERD diagram and DDL</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Save button */}
+          {isSchemaDirty && onSaveSchema && (
+            <Button variant="default" size="sm" onClick={onSaveSchema} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Schema
+                </>
+              )}
+            </Button>
+          )}
+
           {hasSchema && (
             <Button variant="outline" size="sm" onClick={() => setIsShareDialogOpen(true)}>
               <Share2 className="h-4 w-4 mr-2" />
@@ -90,42 +131,55 @@ const ERDSidebar = ({ schema, ddl, isOpen, onToggle }: ERDSidebarProps) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {hasSchema ? (
-          <>
-            {/* ERD Diagram */}
-            <Card className="h-[50vh] overflow-hidden">
-              <ERDDiagram initialNodes={nodes} initialEdges={edges} />
-            </Card>
+          <Tabs defaultValue="diagram" className="w-full h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="diagram">Diagram</TabsTrigger>
+              <TabsTrigger value="ddl">DDL Script</TabsTrigger>
+            </TabsList>
 
-            {/* DDL Script */}
-            {ddl && (
-              <Collapsible open={isDdlOpen} onOpenChange={setIsDdlOpen}>
-                <Card>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between p-4">
-                      <div className="flex items-center gap-2">
-                        <Code className="h-4 w-4" />
-                        <span className="font-semibold">DDL Script</span>
-                      </div>
-                      {isDdlOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="p-4 pt-0">
-                      <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
-                        <code>{ddl}</code>
-                      </pre>
-                    </div>
-                  </CollapsibleContent>
+            {/* Diagram Tab */}
+            <TabsContent value="diagram" className="flex-1 mt-4">
+              <Card className="h-[calc(100vh-200px)] overflow-hidden">
+                <ERDDiagram
+                  initialNodes={nodes}
+                  initialEdges={edges}
+                  onEntityUpdate={onEntityUpdate}
+                />
+              </Card>
+            </TabsContent>
+
+            {/* DDL Script Tab */}
+            <TabsContent value="ddl" className="flex-1 mt-4">
+              {ddl ? (
+                <Card className="overflow-hidden h-[calc(100vh-200px)]">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="sql"
+                    value={ddl}
+                    options={{
+                      readOnly: true,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 14,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      scrollbar: {
+                        vertical: "visible",
+                        horizontal: "visible",
+                      },
+                    }}
+                    theme="vs-dark"
+                  />
                 </Card>
-              </Collapsible>
-            )}
-          </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>No DDL script available</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <p>No schema available yet. Start a conversation to generate one!</p>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -14,11 +14,13 @@ import { type Node, type Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import DBNode, { type DBNodeData } from "@/components/erd/db-diagram-view/DBNode";
 import DBEdge, { type DBEdgeData } from "@/components/erd/db-diagram-view/DBEdge";
-import createEdge from "./utils/createDBDiagramEdge";
+import createDBDiagramEdge from "./utils/createDBDiagramEdge";
+import type { ERDEntity } from "@/api";
 
 interface DBDiagramProps {
   initialNodes: Node<DBNodeData>[];
   initialEdges: Edge<DBEdgeData>[];
+  onEntityUpdate?: (entity: ERDEntity) => void;
 }
 
 const nodeTypes = {
@@ -29,9 +31,26 @@ const edgeTypes = {
   dbEdge: DBEdge,
 };
 
-const DBDiagram = ({ initialNodes, initialEdges }: DBDiagramProps) => {
+const DBDiagram = ({ initialNodes, initialEdges, onEntityUpdate }: DBDiagramProps) => {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+
+  // Sync state when initial props change (e.g., after schema update)
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges]);
+
+  // Add onEntityUpdate to node data
+  const nodesWithUpdateHandler = useMemo(() => {
+    return nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        onEntityUpdate,
+      },
+    }));
+  }, [nodes, onEntityUpdate]);
 
   const onNodesChange: OnNodesChange<Node<DBNodeData>> = useCallback(
     (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -114,7 +133,7 @@ const DBDiagram = ({ initialNodes, initialEdges }: DBDiagramProps) => {
       }
 
       // Create the new edge using the createEdge utility
-      const newEdge = createEdge({
+      const newEdge = createDBDiagramEdge({
         sourceNode,
         targetNode,
         sourceAttribute,
@@ -132,7 +151,7 @@ const DBDiagram = ({ initialNodes, initialEdges }: DBDiagramProps) => {
   return (
     <div className="w-full h-full">
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithUpdateHandler}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
