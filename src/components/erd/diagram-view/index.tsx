@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -15,10 +15,12 @@ import "@xyflow/react/dist/style.css";
 import ERDNode, { type ERDNodeData } from "@/components/erd/diagram-view/ERDNode";
 import ERDEdge, { type ERDEdgeData } from "@/components/erd/diagram-view/ERDEdge";
 import createEdge from "../utils/createEdge";
+import type { ERDEntity } from "@/api";
 
 interface ERDDiagramProps {
   initialNodes: Node<ERDNodeData>[];
   initialEdges: Edge<ERDEdgeData>[];
+  onEntityUpdate?: (entity: ERDEntity) => void;
 }
 
 const nodeTypes = {
@@ -29,9 +31,26 @@ const edgeTypes = {
   erdEdge: ERDEdge,
 };
 
-const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
+const ERDDiagram = ({ initialNodes, initialEdges, onEntityUpdate }: ERDDiagramProps) => {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
+
+  // Sync state when initial props change (e.g., after schema update)
+  useEffect(() => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges]);
+
+  // Add onEntityUpdate to node data
+  const nodesWithUpdateHandler = useMemo(() => {
+    return nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        onEntityUpdate,
+      },
+    }));
+  }, [nodes, onEntityUpdate]);
 
   const onNodesChange: OnNodesChange<Node<ERDNodeData>> = useCallback(
     (changes) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -132,7 +151,7 @@ const ERDDiagram = ({ initialNodes, initialEdges }: ERDDiagramProps) => {
   return (
     <div className="w-full h-full">
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithUpdateHandler}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

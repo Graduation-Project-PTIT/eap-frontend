@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDiagram, useDeleteDiagram } from "@/api/services/diagram-service";
 import { ArrowLeft, Eye, Calendar, Edit, Trash2, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -14,6 +15,7 @@ import { getEdgesForDiagram } from "@/components/erd/utils/getEdgesForDiagram";
 import getLayoutedElements from "@/components/erd/utils/getLayoutedElements";
 import { useMemo, useState } from "react";
 import { getCurrentUser } from "aws-amplify/auth";
+import Editor from "@monaco-editor/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,32 +199,52 @@ const DiagramDetail = () => {
           )}
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* ERD Diagram */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">ERD Diagram</h3>
-            <Card className="h-[500px] overflow-hidden">
-              <ERDDiagram initialNodes={nodes} initialEdges={edges} />
-            </Card>
-          </div>
+        <CardContent>
+          <Tabs defaultValue="diagram" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="diagram">Diagram</TabsTrigger>
+              <TabsTrigger value="ddl">DDL Script</TabsTrigger>
+            </TabsList>
 
-          {/* DDL Script */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">DDL Script</h3>
-              <Button variant="outline" size="sm" onClick={handleDownloadDDL}>
-                <Download className="h-4 w-4 mr-2" />
-                Download SQL
-              </Button>
-            </div>
-            <Card>
-              <CardContent className="p-4">
-                <pre className="text-sm font-mono whitespace-pre-wrap bg-muted p-4 rounded-lg overflow-auto max-h-96">
-                  {diagram.ddlScript}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
+            {/* Diagram Tab */}
+            <TabsContent value="diagram" className="mt-6">
+              <Card className="h-[600px] overflow-hidden">
+                <ERDDiagram initialNodes={nodes} initialEdges={edges} />
+              </Card>
+            </TabsContent>
+
+            {/* DDL Script Tab */}
+            <TabsContent value="ddl" className="mt-6">
+              <div className="flex items-center justify-end mb-3">
+                <Button variant="outline" size="sm" onClick={handleDownloadDDL}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download SQL
+                </Button>
+              </div>
+              <Card className="overflow-hidden">
+                <div className="h-[600px]">
+                  <Editor
+                    height="600px"
+                    defaultLanguage="sql"
+                    value={diagram.ddlScript}
+                    options={{
+                      readOnly: true,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 14,
+                      lineNumbers: "on",
+                      renderLineHighlight: "all",
+                      scrollbar: {
+                        vertical: "visible",
+                        horizontal: "visible",
+                      },
+                    }}
+                    theme="vs-dark"
+                  />
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 

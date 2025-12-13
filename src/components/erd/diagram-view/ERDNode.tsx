@@ -11,22 +11,23 @@ import { ERDNodeField } from "./ERDNodeField";
 export type ERDNodeData = {
   entity: ERDEntity;
   isEditable: boolean;
+  onEntityUpdate?: (entity: ERDEntity) => void;
 };
 
-type ERDNodeProps = Node<{ entity: ERDEntity; isEditable: boolean }, "erdNode">;
+type ERDNodeProps = Node<ERDNodeData, "erdNode">;
 
 const ERDNode = ({ data, selected, id }: NodeProps<ERDNodeProps>) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const { entity, isEditable } = data;
+  const { entity, isEditable, onEntityUpdate } = data;
 
   // Determine if node is focused (selected or hovering)
   const focused = useMemo(() => selected || isHovering, [selected, isHovering]);
 
   const handleSave = (updatedEntity: ERDEntity) => {
-    // This will be handled by the parent component
-    // For now, we just close the dialog
-    console.log("Updated entity:", updatedEntity);
+    if (onEntityUpdate) {
+      onEntityUpdate(updatedEntity);
+    }
   };
 
   return (
