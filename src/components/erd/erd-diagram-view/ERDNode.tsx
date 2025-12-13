@@ -94,6 +94,7 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
         selected && "shadow-lg ring-2 ring-blue-500",
       )}
     >
+      {/* Target handles for receiving connections from entities or parent attributes */}
       <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-gray-600" id="left" />
       <Handle
         type="target"
@@ -107,6 +108,32 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
         position={Position.Bottom}
         className="!w-2 !h-2 !bg-gray-600"
         id="bottom"
+      />
+
+      {/* Source handles for connecting to sub-attributes (composite attributes) */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="left-source"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="right-source"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="top-source"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="bottom-source"
       />
 
       <span
@@ -131,7 +158,9 @@ export const ERDRelationshipNode = ({ data, selected }: NodeProps<RelationshipNo
   return (
     <div className="relative w-[140px] h-[140px] flex items-center justify-center">
       {/* Connection handles positioned at diamond vertices (peaks) */}
-      {/* Top vertex - at the top center of the container */}
+      {/* Each vertex has both a target handle (for incoming edges) and source handle (for outgoing edges) */}
+
+      {/* Top vertex */}
       <Handle
         type="target"
         position={Position.Top}
@@ -139,15 +168,31 @@ export const ERDRelationshipNode = ({ data, selected }: NodeProps<RelationshipNo
         id="top"
         style={{ top: "0px", left: "50%", transform: "translate(-50%, -50%)" }}
       />
-      {/* Right vertex - at the right center of the container */}
       <Handle
         type="source"
+        position={Position.Top}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="top-source"
+        style={{ top: "0px", left: "50%", transform: "translate(-50%, -50%)" }}
+      />
+
+      {/* Right vertex */}
+      <Handle
+        type="target"
         position={Position.Right}
         className="!w-2 !h-2 !bg-gray-600"
         id="right"
         style={{ right: "0px", top: "50%", transform: "translate(50%, -50%)" }}
       />
-      {/* Bottom vertex - at the bottom center of the container */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="right-source"
+        style={{ right: "0px", top: "50%", transform: "translate(50%, -50%)" }}
+      />
+
+      {/* Bottom vertex */}
       <Handle
         type="target"
         position={Position.Bottom}
@@ -155,12 +200,27 @@ export const ERDRelationshipNode = ({ data, selected }: NodeProps<RelationshipNo
         id="bottom"
         style={{ bottom: "0px", left: "50%", transform: "translate(-50%, 50%)" }}
       />
-      {/* Left vertex - at the left center of the container */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="bottom-source"
+        style={{ bottom: "0px", left: "50%", transform: "translate(-50%, 50%)" }}
+      />
+
+      {/* Left vertex */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-2 !h-2 !bg-gray-600"
+        id="left"
+        style={{ left: "0px", top: "50%", transform: "translate(-50%, -50%)" }}
+      />
       <Handle
         type="source"
         position={Position.Left}
         className="!w-2 !h-2 !bg-gray-600"
-        id="left"
+        id="left-source"
         style={{ left: "0px", top: "50%", transform: "translate(-50%, -50%)" }}
       />
 

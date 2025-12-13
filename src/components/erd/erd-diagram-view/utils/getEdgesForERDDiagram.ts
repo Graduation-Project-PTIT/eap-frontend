@@ -2,6 +2,7 @@ import type { Node, Edge } from "@xyflow/react";
 import type { ERDNodeData, ERDEdgeData } from "../types";
 import { ERD_EDGE_TYPES } from "../types";
 import { isAttributeNode, isRelationshipNode } from "../types";
+import { getSmartHandleIds } from "./layoutChenNotation";
 
 /**
  * Generate ERD diagram edges from nodes
@@ -10,6 +11,8 @@ import { isAttributeNode, isRelationshipNode } from "../types";
  * - Composite attributes to their sub-attributes
  * - Entities to relationships
  * - Relationships to target entities
+ *
+ * Uses smart handle calculation based on node positions for optimal edge routing.
  */
 export const getEdgesForERDDiagram = (nodes: Node<ERDNodeData>[]): Edge<ERDEdgeData>[] => {
   const edges: Edge<ERDEdgeData>[] = [];
@@ -23,12 +26,13 @@ export const getEdgesForERDDiagram = (nodes: Node<ERDNodeData>[]): Edge<ERDEdgeD
         const parentNode = nodes.find((n) => n.id === parentAttributeId);
 
         if (parentNode) {
+          const handleIds = getSmartHandleIds(parentNode.position, node.position);
           edges.push({
             id: `edge-${parentAttributeId}-${node.id}`,
             source: parentAttributeId,
             target: node.id,
-            sourceHandle: "right",
-            targetHandle: "left",
+            sourceHandle: handleIds.sourceHandle,
+            targetHandle: handleIds.targetHandle,
             type: ERD_EDGE_TYPES.DEFAULT,
             data: {},
           });
@@ -39,12 +43,13 @@ export const getEdgesForERDDiagram = (nodes: Node<ERDNodeData>[]): Edge<ERDEdgeD
         const entityNode = nodes.find((n) => n.id === entityNodeId);
 
         if (entityNode) {
+          const handleIds = getSmartHandleIds(entityNode.position, node.position);
           edges.push({
             id: `edge-${entityNodeId}-${node.id}`,
             source: entityNodeId,
             target: node.id,
-            sourceHandle: "right-source", // Use source handle from entity
-            targetHandle: "left",
+            sourceHandle: handleIds.sourceHandle,
+            targetHandle: handleIds.targetHandle,
             type: ERD_EDGE_TYPES.DEFAULT,
             data: {},
           });
@@ -58,14 +63,25 @@ export const getEdgesForERDDiagram = (nodes: Node<ERDNodeData>[]): Edge<ERDEdgeD
     if (isRelationshipNode(node.data)) {
       const sourceEntityId = `entity-${node.data.sourceEntity}`;
       const targetEntityId = `entity-${node.data.targetEntity}`;
+      const sourceEntityNode = nodes.find((n) => n.id === sourceEntityId);
+      const targetEntityNode = nodes.find((n) => n.id === targetEntityId);
+
+      // Calculate smart handles if both nodes exist, otherwise use defaults
+      const sourceToRelHandles = sourceEntityNode
+        ? getSmartHandleIds(sourceEntityNode.position, node.position)
+        : { sourceHandle: "top-source", targetHandle: "bottom" };
+
+      const relToTargetHandles = targetEntityNode
+        ? getSmartHandleIds(node.position, targetEntityNode.position)
+        : { sourceHandle: "right-source", targetHandle: "top" };
 
       // Edge from source entity to relationship
       edges.push({
         id: `edge-${sourceEntityId}-${node.id}`,
         source: sourceEntityId,
         target: node.id,
-        sourceHandle: "top-source", // Use source handle from entity
-        targetHandle: "bottom",
+        sourceHandle: sourceToRelHandles.sourceHandle,
+        targetHandle: sourceToRelHandles.targetHandle, // Relationship now has target handles without -source suffix
         type: ERD_EDGE_TYPES.DEFAULT,
         data: {
           sourceLabel: getCardinalityLabel(node.data.relationType, "source"),
@@ -77,8 +93,8 @@ export const getEdgesForERDDiagram = (nodes: Node<ERDNodeData>[]): Edge<ERDEdgeD
         id: `edge-${node.id}-${targetEntityId}`,
         source: node.id,
         target: targetEntityId,
-        sourceHandle: "right",
-        targetHandle: "top", // Use target handle from entity
+        sourceHandle: relToTargetHandles.sourceHandle, // Relationship now has source handles with -source suffix
+        targetHandle: relToTargetHandles.targetHandle,
         type: ERD_EDGE_TYPES.DEFAULT,
         data: {
           targetLabel: getCardinalityLabel(node.data.relationType, "target"),
