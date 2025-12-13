@@ -1,3 +1,4 @@
+import dagre from "@dagrejs/dagre";
 import type { Node, Edge } from "@xyflow/react";
 import type {
   ERDEntity,
@@ -24,14 +25,24 @@ export type HandleIds = {
 export interface LayoutOptions {
   /** Radius for attribute placement around entities (default: 180) */
   attributeRadius?: number;
-  /** Horizontal spacing between entity clusters (default: 500) */
+  /** Horizontal spacing between entity clusters - used for non-dagre layout (default: 500) */
   entitySpacing?: number;
-  /** Starting X position (default: 100) */
+  /** Starting X position - used for non-dagre layout (default: 100) */
   startX?: number;
-  /** Starting Y position (default: 300) */
+  /** Starting Y position - used for non-dagre layout (default: 300) */
   startY?: number;
   /** Additional radius for sub-attributes of composite attributes (default: 100) */
   subAttributeRadiusOffset?: number;
+  /** Enable dagre layout for automatic graph positioning (default: true) */
+  useDagreLayout?: boolean;
+  /** Dagre layout direction: 'TB' (top-bottom), 'LR' (left-right), 'BT', 'RL' (default: 'LR') */
+  direction?: "TB" | "LR" | "BT" | "RL";
+  /** Horizontal separation between nodes in dagre layout (default: 100) */
+  nodeSeparation?: number;
+  /** Vertical separation between ranks in dagre layout (default: 150) */
+  rankSeparation?: number;
+  /** Padding around entity sections for dagre node size calculation (default: 50) */
+  entityPadding?: number;
 }
 
 const DEFAULT_OPTIONS: Required<LayoutOptions> = {
@@ -40,7 +51,15 @@ const DEFAULT_OPTIONS: Required<LayoutOptions> = {
   startX: 100,
   startY: 300,
   subAttributeRadiusOffset: 100,
+  useDagreLayout: true,
+  direction: "LR",
+  nodeSeparation: 100,
+  rankSeparation: 150,
+  entityPadding: 50,
 };
+
+// Size of relationship diamond node (from ERDNode.tsx)
+const RELATIONSHIP_NODE_SIZE = 160;
 
 // ============================================================================
 // Smart Handle Calculation
@@ -98,72 +117,49 @@ const getAttributeType = (attribute: ERDAttribute): ERDAttributeNodeData["type"]
 };
 
 // ============================================================================
-// Layout Chen Notation - Main Function
+// Dagre Layout Helpers
 // ============================================================================
 
 /**
- * Generate nodes and edges for an ERD diagram using Chen notation layout.
- * Each entity is the center of a cluster with its attributes arranged in a circle.
- *
- * TODO: Implement collision detection for overlapping attributes when there are many attributes
+ * Calculate the bounding box size for an entity section (entity + its attributes in a circle).
+ * This is used to tell dagre how much space each entity "super node" needs.
  */
-export const layoutChenNotation = (
-  entities: ERDEntity[],
-  options?: LayoutOptions,
-): { nodes: Node<ERDNodeData>[]; edges: Edge<ERDEdgeData>[] } => {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const nodes: Node<ERDNodeData>[] = [];
-  const edges: Edge<ERDEdgeData>[] = [];
+const calculateEntitySectionSize = (
+  attributeCount: number,
+  attributeRadius: number,
+  padding: number,
+): { width: number; height: number } => {
+  // The entity section is a circle with the entity at center and attributes around it
+  // Diameter = 2 * attributeRadius + some padding for the attribute nodes themselves
+  const attributeNodeSize = 100; // Approximate size of attribute ellipse
+  const diameter = attributeRadius * 2 + attributeNodeSize + padding * 2;
 
-  // Track relationships for later processing
-  const relationships: Array<{
-    name: string;
-    sourceEntity: string;
-    targetEntity: string;
-    relationType?: ERDRelationshipNodeData["relationType"];
-  }> = [];
+  // If no attributes, just use a minimum size for the entity node
+  if (attributeCount === 0) {
+    return { width: 200, height: 100 };
+  }
 
-  // Map to store entity positions for relationship placement
-  const entityPositions: Map<string, Position> = new Map();
+  return { width: diameter, height: diameter };
+};
 
-  // First pass: Create entity and attribute nodes
-  entities.forEach((entity, entityIndex) => {
-    const entityId = `entity-${entity.name}`;
-    const entityX = opts.startX + entityIndex * opts.entitySpacing;
-    const entityY = opts.startY;
-    const entityPos: Position = { x: entityX, y: entityY };
+/**
+ * Relationship info extracted from entities for graph building
+ */
+type RelationshipInfo = {
+  name: string;
+  sourceEntity: string;
+  targetEntity: string;
+  relationType?: ERDRelationshipNodeData["relationType"];
+};
 
-    entityPositions.set(entity.name, entityPos);
+/**
+ * Extract relationships from entities (from foreign key attributes)
+ */
+const extractRelationships = (entities: ERDEntity[]): RelationshipInfo[] => {
+  const relationships: RelationshipInfo[] = [];
 
-    // Create entity node
-    const entityNodeData: ERDEntityNodeData = {
-      type: entity.isWeakEntity ? "weak-entity" : "entity",
-      entity: entity,
-      label: entity.name,
-    };
-
-    nodes.push({
-      id: entityId,
-      position: entityPos,
-      data: entityNodeData,
-      type: ERD_NODE_TYPES.ENTITY,
-    });
-
-    // Create attribute nodes in circular pattern
-    const totalAttributes = entity.attributes.length;
-    entity.attributes.forEach((attribute, attrIndex) => {
-      createAttributeNodesWithLayout(
-        nodes,
-        edges,
-        attribute,
-        entity.name,
-        entityPos,
-        attrIndex,
-        totalAttributes,
-        opts,
-      );
-
-      // Track relationships from foreign keys
+  entities.forEach((entity) => {
+    entity.attributes.forEach((attribute) => {
       if (attribute.foreignKey && attribute.foreignKeyTable) {
         relationships.push({
           name: attribute.relationshipName || `${entity.name}_${attribute.foreignKeyTable}`,
@@ -175,22 +171,211 @@ export const layoutChenNotation = (
     });
   });
 
-  // Second pass: Create relationship nodes and their edges
+  return relationships;
+};
+
+/**
+ * Build a dagre graph for layout calculation.
+ * Entity sections and relationships are nodes; edges connect them.
+ */
+const buildDagreGraph = (
+  entities: ERDEntity[],
+  relationships: RelationshipInfo[],
+  opts: Required<LayoutOptions>,
+): dagre.graphlib.Graph => {
+  const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+
+  // Configure dagre graph
+  dagreGraph.setGraph({
+    rankdir: opts.direction,
+    nodesep: opts.nodeSeparation,
+    ranksep: opts.rankSeparation,
+  });
+
+  // Add entity section nodes
+  entities.forEach((entity) => {
+    const size = calculateEntitySectionSize(
+      entity.attributes.length,
+      opts.attributeRadius,
+      opts.entityPadding,
+    );
+    dagreGraph.setNode(`entity-${entity.name}`, {
+      width: size.width,
+      height: size.height,
+      label: entity.name,
+    });
+  });
+
+  // Deduplicate relationships first
   const uniqueRelationships = deduplicateRelationships(relationships);
 
+  // Add relationship nodes and edges
   uniqueRelationships.forEach((rel) => {
-    const sourcePos = entityPositions.get(rel.sourceEntity);
-    const targetPos = entityPositions.get(rel.targetEntity);
-
-    if (!sourcePos || !targetPos) return;
-
     const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
 
-    // Position relationship node between the two entities, offset vertically
-    const relPos: Position = {
-      x: (sourcePos.x + targetPos.x) / 2,
-      y: Math.min(sourcePos.y, targetPos.y) - 150,
-    };
+    // Add relationship node
+    dagreGraph.setNode(relationshipId, {
+      width: RELATIONSHIP_NODE_SIZE,
+      height: RELATIONSHIP_NODE_SIZE,
+      label: rel.name,
+    });
+
+    // Add edges: source entity -> relationship -> target entity
+    dagreGraph.setEdge(`entity-${rel.sourceEntity}`, relationshipId);
+    dagreGraph.setEdge(relationshipId, `entity-${rel.targetEntity}`);
+  });
+
+  return dagreGraph;
+};
+
+// ============================================================================
+// Layout Chen Notation - Main Function
+// ============================================================================
+
+/**
+ * Generate nodes and edges for an ERD diagram using Chen notation layout.
+ * Each entity is the center of a cluster with its attributes arranged in a circle.
+ *
+ * When useDagreLayout is true (default), dagre is used to calculate optimal positions
+ * for entity sections and relationships, preventing overlaps.
+ *
+ * TODO: Implement collision detection for overlapping attributes when there are many attributes
+ */
+export const layoutChenNotation = (
+  entities: ERDEntity[],
+  options?: LayoutOptions,
+): { nodes: Node<ERDNodeData>[]; edges: Edge<ERDEdgeData>[] } => {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const nodes: Node<ERDNodeData>[] = [];
+  const edges: Edge<ERDEdgeData>[] = [];
+
+  // Extract relationships from foreign key attributes
+  const relationships = extractRelationships(entities);
+  const uniqueRelationships = deduplicateRelationships(relationships);
+
+  // Map to store entity positions for edge creation
+  const entityPositions: Map<string, Position> = new Map();
+  // Map to store relationship positions
+  const relationshipPositions: Map<string, Position> = new Map();
+
+  if (opts.useDagreLayout) {
+    // Use dagre for macro layout
+    const dagreGraph = buildDagreGraph(entities, relationships, opts);
+    dagre.layout(dagreGraph);
+
+    // Extract positions from dagre graph and create entity + attribute nodes
+    entities.forEach((entity) => {
+      const entityId = `entity-${entity.name}`;
+      const dagreNode = dagreGraph.node(entityId);
+
+      // Dagre returns center position, we use it directly
+      const entityPos: Position = { x: dagreNode.x, y: dagreNode.y };
+      entityPositions.set(entity.name, entityPos);
+
+      // Create entity node
+      const entityNodeData: ERDEntityNodeData = {
+        type: entity.isWeakEntity ? "weak-entity" : "entity",
+        entity: entity,
+        label: entity.name,
+      };
+
+      nodes.push({
+        id: entityId,
+        position: entityPos,
+        data: entityNodeData,
+        type: ERD_NODE_TYPES.ENTITY,
+      });
+
+      // Create attribute nodes in circular pattern around entity
+      const totalAttributes = entity.attributes.length;
+      entity.attributes.forEach((attribute, attrIndex) => {
+        createAttributeNodesWithLayout(
+          nodes,
+          edges,
+          attribute,
+          entity.name,
+          entityPos,
+          attrIndex,
+          totalAttributes,
+          opts,
+        );
+      });
+    });
+
+    // Extract relationship positions from dagre
+    uniqueRelationships.forEach((rel) => {
+      const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
+      const dagreNode = dagreGraph.node(relationshipId);
+
+      if (dagreNode) {
+        const relPos: Position = { x: dagreNode.x, y: dagreNode.y };
+        relationshipPositions.set(relationshipId, relPos);
+      }
+    });
+  } else {
+    // Use simple linear layout (original behavior)
+    entities.forEach((entity, entityIndex) => {
+      const entityId = `entity-${entity.name}`;
+      const entityX = opts.startX + entityIndex * opts.entitySpacing;
+      const entityY = opts.startY;
+      const entityPos: Position = { x: entityX, y: entityY };
+
+      entityPositions.set(entity.name, entityPos);
+
+      // Create entity node
+      const entityNodeData: ERDEntityNodeData = {
+        type: entity.isWeakEntity ? "weak-entity" : "entity",
+        entity: entity,
+        label: entity.name,
+      };
+
+      nodes.push({
+        id: entityId,
+        position: entityPos,
+        data: entityNodeData,
+        type: ERD_NODE_TYPES.ENTITY,
+      });
+
+      // Create attribute nodes in circular pattern
+      const totalAttributes = entity.attributes.length;
+      entity.attributes.forEach((attribute, attrIndex) => {
+        createAttributeNodesWithLayout(
+          nodes,
+          edges,
+          attribute,
+          entity.name,
+          entityPos,
+          attrIndex,
+          totalAttributes,
+          opts,
+        );
+      });
+    });
+
+    // Calculate relationship positions (midpoint between entities)
+    uniqueRelationships.forEach((rel) => {
+      const sourcePos = entityPositions.get(rel.sourceEntity);
+      const targetPos = entityPositions.get(rel.targetEntity);
+
+      if (sourcePos && targetPos) {
+        const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
+        const relPos: Position = {
+          x: (sourcePos.x + targetPos.x) / 2,
+          y: Math.min(sourcePos.y, targetPos.y) - 150,
+        };
+        relationshipPositions.set(relationshipId, relPos);
+      }
+    });
+  }
+
+  // Create relationship nodes and edges (same for both layout modes)
+  uniqueRelationships.forEach((rel) => {
+    const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
+    const sourcePos = entityPositions.get(rel.sourceEntity);
+    const targetPos = entityPositions.get(rel.targetEntity);
+    const relPos = relationshipPositions.get(relationshipId);
+
+    if (!sourcePos || !targetPos || !relPos) return;
 
     const relationshipNodeData: ERDRelationshipNodeData = {
       type: "relationship",
@@ -215,7 +400,7 @@ export const layoutChenNotation = (
       source: sourceEntityId,
       target: relationshipId,
       sourceHandle: sourceToRelHandles.sourceHandle,
-      targetHandle: sourceToRelHandles.targetHandle, // Relationship now has target handles without -source suffix
+      targetHandle: sourceToRelHandles.targetHandle,
       type: ERD_EDGE_TYPES.DEFAULT,
       data: {
         sourceLabel: getCardinalityLabel(rel.relationType, "source"),
@@ -229,7 +414,7 @@ export const layoutChenNotation = (
       id: `edge-${relationshipId}-${targetEntityId}`,
       source: relationshipId,
       target: targetEntityId,
-      sourceHandle: relToTargetHandles.sourceHandle, // Relationship now has source handles with -source suffix
+      sourceHandle: relToTargetHandles.sourceHandle,
       targetHandle: relToTargetHandles.targetHandle,
       type: ERD_EDGE_TYPES.DEFAULT,
       data: {

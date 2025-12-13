@@ -1,10 +1,15 @@
 import ERDDiagram from "@/components/erd/erd-diagram-view";
-import { getNodesForERDDiagram } from "@/components/erd/erd-diagram-view/utils/getNodesForERDDiagram";
-import { getEdgesForERDDiagram } from "@/components/erd/erd-diagram-view/utils/getEdgesForERDDiagram";
+import { layoutChenNotation } from "@/components/erd/erd-diagram-view/utils/layoutChenNotation";
 import mockData from "./mock";
 
-const initialNodes = getNodesForERDDiagram(mockData.entities);
-const initialEdges = getEdgesForERDDiagram(initialNodes);
+// Use dagre layout for automatic positioning of entity sections and relationships
+const { nodes: initialNodes, edges: initialEdges } = layoutChenNotation(mockData.entities, {
+  useDagreLayout: true,
+  direction: "LR", // Left-to-right layout
+  attributeRadius: 180,
+  nodeSeparation: 0,
+  rankSeparation: 50,
+});
 
 const ERDDiagramPage = () => {
   return <ERDDiagram initialNodes={initialNodes} initialEdges={initialEdges} />;
