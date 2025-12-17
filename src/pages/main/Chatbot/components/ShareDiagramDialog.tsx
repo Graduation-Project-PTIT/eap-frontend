@@ -25,8 +25,7 @@ interface ShareDiagramDialogProps {
   onSubmit: (data: {
     title: string;
     description: string;
-    visibility: "public" | "private" | "class";
-    classId?: string;
+    visibility: "public" | "private";
   }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -34,8 +33,7 @@ interface ShareDiagramDialogProps {
 const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagramDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "private" | "class">("private");
-  const [classId, setClassId] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,13 +41,11 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
       title,
       description,
       visibility,
-      classId: visibility === "class" ? classId : undefined,
     });
     // Reset form
     setTitle("");
     setDescription("");
     setVisibility("private");
-    setClassId("");
   };
 
   return (
@@ -85,7 +81,7 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
             <Label htmlFor="visibility">Visibility *</Label>
             <Select
               value={visibility}
-              onValueChange={(value) => setVisibility(value as "public" | "private" | "class")}
+              onValueChange={(value) => setVisibility(value as "public" | "private")}
             >
               <SelectTrigger id="visibility">
                 <SelectValue />
@@ -93,23 +89,9 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
               <SelectContent>
                 <SelectItem value="private">Private (Only me)</SelectItem>
                 <SelectItem value="public">Public (Everyone)</SelectItem>
-                <SelectItem value="class">Class (Class members only)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {visibility === "class" && (
-            <div className="space-y-2">
-              <Label htmlFor="classId">Class ID *</Label>
-              <Input
-                id="classId"
-                placeholder="Enter class ID"
-                value={classId}
-                onChange={(e) => setClassId(e.target.value)}
-                required
-              />
-            </div>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>

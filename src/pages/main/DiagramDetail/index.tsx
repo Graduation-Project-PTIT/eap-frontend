@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDiagram, useDeleteDiagram } from "@/api/services/diagram-service";
-import { ArrowLeft, Eye, Calendar, Edit, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Eye, Calendar, Trash2, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/lib/toast";
 import VoteButtons from "./components/VoteButtons";
@@ -26,6 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import usePermissions from "@/hooks/use-permissions";
+import VerificationBadge from "./components/VerificationBadge";
+import TeacherActions from "./components/TeacherActions";
+import FeedbackSection from "./components/FeedbackSection";
 
 const DiagramDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +39,7 @@ const DiagramDetail = () => {
 
   const { data: diagram, isLoading, error } = useDiagram(id!);
   const deleteMutation = useDeleteDiagram();
+  const { isTeacher } = usePermissions();
 
   // Get current user
   useMemo(async () => {
@@ -139,7 +144,10 @@ const DiagramDetail = () => {
                   Back
                 </Button>
               </div>
-              <CardTitle className="text-2xl">{diagram.title}</CardTitle>
+              <CardTitle className="text-2xl">
+                {diagram.title}
+                {diagram.isVerified && <VerificationBadge diagram={diagram} />}
+              </CardTitle>
               <div className="flex items-center gap-3 mt-3 flex-wrap">
                 <Badge className={getVisibilityColor(diagram.visibility)}>
                   {diagram.visibility}
@@ -156,26 +164,19 @@ const DiagramDetail = () => {
                 userVote={diagram.userVote}
                 isOwner={!!isOwner}
               />
+              {isTeacher() && (
+                <TeacherActions diagramId={diagram.id} isVerified={diagram.isVerified} />
+              )}
               {isOwner && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/diagrams/${id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
               )}
             </div>
           </div>
@@ -208,9 +209,15 @@ const DiagramDetail = () => {
 
             {/* Diagram Tab */}
             <TabsContent value="diagram" className="mt-6">
-              <Card className="h-[600px] overflow-hidden">
-                <ERDDiagram initialNodes={nodes} initialEdges={edges} />
-              </Card>
+              <div className="space-y-6">
+                {/* ERD Visualization */}
+                <Card className="h-[700px] overflow-hidden">
+                  <ERDDiagram initialNodes={nodes} initialEdges={edges} />
+                </Card>
+
+                {/* Feedback Section (GitHub PR-style) */}
+                <FeedbackSection diagramId={diagram.id} />
+              </div>
             </TabsContent>
 
             {/* DDL Script Tab */}

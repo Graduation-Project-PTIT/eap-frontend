@@ -48,6 +48,13 @@ export interface DiagramResponse {
     username: string;
     avatarUrl?: string;
   };
+  isVerified?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  verifierInfo?: {
+    id: string;
+    username: string;
+  };
 }
 
 export interface DiagramListResponse {
@@ -65,6 +72,30 @@ export interface SearchDiagramsParams {
   order?: "asc" | "desc";
   page?: number;
   size?: number;
+}
+
+export interface DiagramFeedback {
+  id: string;
+  diagramId: string;
+  teacherId: string;
+  content: string;
+  feedbackType: "suggestion" | "review" | "compliment";
+  createdAt: string;
+  updatedAt: string;
+  teacher?: {
+    id: string;
+    username: string;
+    fullName: string;
+  };
+}
+
+export interface VerifyDiagramInput {
+  verified: boolean;
+}
+
+export interface DiagramFeedbackInput {
+  content: string;
+  feedbackType: "suggestion" | "review" | "compliment";
 }
 
 // API Functions
@@ -94,8 +125,13 @@ const getClassDiagrams = async (
   return response.data.data;
 };
 
-const getDiagramById = async (id: string): Promise<DiagramResponse> => {
-  const response = await diagramServiceClient.get(`/diagrams/${id}`);
+const getDiagramById = async (
+  id: string,
+  incrementView: boolean = true,
+): Promise<DiagramResponse> => {
+  const response = await diagramServiceClient.get(`/diagrams/${id}`, {
+    params: { incrementView },
+  });
   return response.data.data;
 };
 
@@ -119,6 +155,36 @@ const voteDiagram = async (
 const removeVote = async (id: string): Promise<DiagramResponse> => {
   const response = await diagramServiceClient.delete(`/diagrams/${id}/vote`);
   return response.data.data;
+};
+
+const verifyDiagram = async (id: string, data: VerifyDiagramInput): Promise<DiagramResponse> => {
+  const response = await diagramServiceClient.put(`/diagrams/${id}/verify`, data);
+  return response.data.data;
+};
+
+const addFeedback = async (
+  diagramId: string,
+  data: DiagramFeedbackInput,
+): Promise<DiagramFeedback> => {
+  const response = await diagramServiceClient.post(`/diagrams/${diagramId}/feedbacks`, data);
+  return response.data.data;
+};
+
+const getFeedbacks = async (diagramId: string): Promise<DiagramFeedback[]> => {
+  const response = await diagramServiceClient.get(`/diagrams/${diagramId}/feedbacks`);
+  return response.data.data;
+};
+
+const updateFeedback = async (
+  feedbackId: string,
+  data: DiagramFeedbackInput,
+): Promise<DiagramFeedback> => {
+  const response = await diagramServiceClient.put(`/diagrams/feedbacks/${feedbackId}`, data);
+  return response.data.data;
+};
+
+const deleteFeedback = async (feedbackId: string): Promise<void> => {
+  await diagramServiceClient.delete(`/diagrams/feedbacks/${feedbackId}`);
 };
 
 // React Query Hooks
@@ -191,8 +257,12 @@ export const useVoteDiagram = () => {
   return useMutation({
     mutationFn: ({ id, voteType }: { id: string; voteType: "upvote" | "downvote" }) =>
       voteDiagram(id, voteType),
-    onSuccess: (_: DiagramResponse, variables: { id: string; voteType: "upvote" | "downvote" }) => {
-      queryClient.invalidateQueries({ queryKey: ["diagram", variables.id] });
+    onSuccess: (
+      response: DiagramResponse,
+      variables: { id: string; voteType: "upvote" | "downvote" },
+    ) => {
+      // Directly update cache with returned data to avoid view count increment
+      queryClient.setQueryData(["diagram", variables.id], response);
       queryClient.invalidateQueries({ queryKey: ["diagrams"] });
     },
   });
@@ -202,9 +272,89 @@ export const useRemoveVote = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: removeVote,
-    onSuccess: (_: DiagramResponse, id: string) => {
-      queryClient.invalidateQueries({ queryKey: ["diagram", id] });
+    onSuccess: (response: DiagramResponse, id: string) => {
+      // Directly update cache with returned data to avoid view count increment
+      queryClient.setQueryData(["diagram", id], response);
       queryClient.invalidateQueries({ queryKey: ["diagrams"] });
+    },
+  });
+};
+
+export const useVerifyDiagram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: VerifyDiagramInput }) => verifyDiagram(id, data),
+    onSuccess: (response: DiagramResponse, variables: { id: string; data: VerifyDiagramInput }) => {
+      // Directly update cache with returned data to avoid view count increment
+      queryClient.setQueryData(["diagram", variables.id], response);
+      queryClient.invalidateQueries({ queryKey: ["diagrams"] });
+      queryClient.invalidateQueries({ queryKey: ["myDiagrams"] });
+    },
+  });
+};
+
+export const useAddFeedback = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ diagramId, data }: { diagramId: string; data: DiagramFeedbackInput }) =>
+      addFeedback(diagramId, data),
+    onSuccess: async (
+      _: DiagramFeedback,
+      variables: { diagramId: string; data: DiagramFeedbackInput },
+    ) => {
+      queryClient.invalidateQueries({ queryKey: ["feedbacks", variables.diagramId] });
+      // Refresh diagram data without incrementing view count
+      const updatedDiagram = await getDiagramById(variables.diagramId, false);
+      queryClient.setQueryData(["diagram", variables.diagramId], updatedDiagram);
+    },
+  });
+};
+
+export const useFeedbacks = (diagramId: string) => {
+  return useQuery({
+    queryKey: ["feedbacks", diagramId],
+    queryFn: () => getFeedbacks(diagramId),
+    enabled: !!diagramId,
+  });
+};
+
+export const useUpdateFeedback = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      feedbackId,
+      data,
+    }: {
+      feedbackId: string;
+      data: DiagramFeedbackInput;
+      diagramId?: string;
+    }) => updateFeedback(feedbackId, data),
+    onSuccess: async (
+      _: DiagramFeedback,
+      variables: { feedbackId: string; data: DiagramFeedbackInput; diagramId?: string },
+    ) => {
+      queryClient.invalidateQueries({ queryKey: ["feedbacks"] });
+      // Refresh diagram data without incrementing view count if diagramId provided
+      if (variables.diagramId) {
+        const updatedDiagram = await getDiagramById(variables.diagramId, false);
+        queryClient.setQueryData(["diagram", variables.diagramId], updatedDiagram);
+      }
+    },
+  });
+};
+
+export const useDeleteFeedback = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ feedbackId }: { feedbackId: string; diagramId?: string }) =>
+      deleteFeedback(feedbackId),
+    onSuccess: async (_: void, variables: { feedbackId: string; diagramId?: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["feedbacks"] });
+      // Refresh diagram data without incrementing view count if diagramId provided
+      if (variables.diagramId) {
+        const updatedDiagram = await getDiagramById(variables.diagramId, false);
+        queryClient.setQueryData(["diagram", variables.diagramId], updatedDiagram);
+      }
     },
   });
 };

@@ -33,10 +33,15 @@ const DiagramCard = ({ diagram }: DiagramCardProps) => {
     <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg line-clamp-2">{diagram.title}</h3>
-          <Badge className={getVisibilityColor(diagram.visibility)} variant="secondary">
-            {diagram.visibility}
-          </Badge>
+          <h3 className="font-semibold text-lg line-clamp-2 flex-1">{diagram.title}</h3>
+          <div className="flex items-center gap-2 shrink-0">
+            {diagram.isVerified && (
+              <Badge className="bg-green-500/10 text-green-500 text-xs">✓ Verified</Badge>
+            )}
+            <Badge className={getVisibilityColor(diagram.visibility)} variant="secondary">
+              {diagram.visibility}
+            </Badge>
+          </div>
         </div>
         {diagram.domain && (
           <Badge variant="outline" className="w-fit mt-2">

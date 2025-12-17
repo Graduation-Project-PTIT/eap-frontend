@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../query-client";
-import { apiClient } from "@/api";
+import { userServiceClient } from "@/api";
 
 // Types and Interfaces
 export interface User {
@@ -51,19 +51,19 @@ export interface UserFilters {
 
 // API Functions
 export const userApi = {
-  // Get current user's profile - GET /my-profile
+  // Get current user's profile - GET /api/user/my-profile
   getMyProfile: async (): Promise<User> => {
-    const response = await apiClient.get<UserResponse>("/my-profile");
+    const response = await userServiceClient.get<UserResponse>("/my-profile");
     return response.data.data;
   },
 
-  // Update current user's profile - PUT /
+  // Update current user's profile - PUT /api/user
   updateProfile: async (request: UpdateUserRequest): Promise<User> => {
-    const response = await apiClient.put<UserResponse>("/", request);
+    const response = await userServiceClient.put<UserResponse>("/", request);
     return response.data.data;
   },
 
-  // Get all users (paginated) - GET /all
+  // Get all users (paginated) - GET /api/user/all
   getAllUsers: async (filters?: UserFilters): Promise<UserListResponse["data"]> => {
     const params = {
       page: filters?.page ?? 0,
@@ -71,7 +71,7 @@ export const userApi = {
       orderBy: filters?.orderBy ?? "email",
       order: filters?.order ?? "asc",
     };
-    const response = await apiClient.get<UserListResponse>("/all", { params });
+    const response = await userServiceClient.get<UserListResponse>("/all", { params });
     return response.data.data;
   },
 };
