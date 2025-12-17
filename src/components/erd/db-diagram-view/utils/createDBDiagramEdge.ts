@@ -1,19 +1,19 @@
 import type { Node } from "@xyflow/react";
 import type { DBNodeData } from "../DBNode";
-import type { ERDAttribute } from "../../ERDTableTabs";
+import type { DBAttribute } from "../../ERDTableTabs";
 import { createLeftHandleId, createTargetHandleId } from "../handle-constants";
 import type { DBEdgeData } from "../DBEdge";
 
 interface CreateDBDiagramEdgeParams {
   sourceNode: Node<DBNodeData>;
   targetNode: Node<DBNodeData>;
-  sourceAttribute: ERDAttribute;
-  targetAttribute: ERDAttribute;
+  sourceAttribute: DBAttribute;
+  targetAttribute: DBAttribute;
   sourceHandleId?: string;
   targetHandleId?: string;
 }
 
-const getRelationMultiLabel = (relationType: ERDAttribute["relationType"]): DBEdgeData => {
+const getRelationMultiLabel = (relationType: DBAttribute["relationType"]): DBEdgeData => {
   switch (relationType) {
     case "one-to-one":
       return {

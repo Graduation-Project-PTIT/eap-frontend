@@ -3,7 +3,7 @@ import { Handle, Position, useConnection, useUpdateNodeInternals, useStore } fro
 import { Badge } from "@/components/ui/badge";
 import { Key, Link, Type } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 import {
   createLeftHandleId,
   createRightHandleId,
@@ -15,7 +15,7 @@ import {
 export interface DBNodeFieldProps {
   tableNodeId: string;
   entityName: string;
-  attribute: ERDEntity["attributes"][0];
+  attribute: DBEntity["attributes"][0];
   focused: boolean;
   highlighted: boolean;
   isConnectable: boolean;

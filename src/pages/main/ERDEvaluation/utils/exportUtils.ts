@@ -1,11 +1,11 @@
-import { type ERDExtractionResult } from "@/api/services/evaluation-service";
+import { type DBExtractionResult } from "@/api/services/evaluation-service";
 
 export interface EvaluationReport {
   id: string;
   timestamp: string;
   questionDescription: string;
-  originalData: ERDExtractionResult;
-  refinedData: ERDExtractionResult;
+  originalData: DBExtractionResult;
+  refinedData: DBExtractionResult;
   evaluationReport: string; // AI-generated evaluation report
 }
 

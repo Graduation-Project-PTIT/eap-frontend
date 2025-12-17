@@ -38,15 +38,6 @@ const createApiClient = (): AxiosInstance => {
         console.warn("No auth session available:", error);
       }
 
-      // Log request in development
-      if (import.meta.env.DEV) {
-        console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-          data: config.data,
-          params: config.params,
-          hasAuth: !!config.headers.Authorization,
-        });
-      }
-
       return config;
     },
     (error) => {
@@ -58,17 +49,6 @@ const createApiClient = (): AxiosInstance => {
   // Response interceptor for handling common responses and errors
   client.interceptors.response.use(
     (response: AxiosResponse) => {
-      // Log response in development
-      if (import.meta.env.DEV) {
-        console.log(
-          `✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`,
-          {
-            status: response.status,
-            data: response.data,
-          },
-        );
-      }
-
       return response;
     },
     (error) => {

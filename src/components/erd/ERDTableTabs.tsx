@@ -3,17 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, Grid3x3, TableIcon } from "lucide-react";
-import { type ERDExtractionResult, type ERDEntity } from "@/api/services/evaluation-service";
+import { type DBExtractionResult, type DBEntity } from "@/api/services/evaluation-service";
 import EntityTable from "./table-view/ERDEntityTable";
+import ERDDiagram from "./erd-diagram-view";
+import { layoutChenNotation } from "./erd-diagram-view/utils/layoutChenNotation";
 
 // Define the attribute type based on the ERDEntity interface
-export type ERDAttribute = ERDEntity["attributes"][0];
+export type DBAttribute = DBEntity["attributes"][0];
 
 type ViewMode = "table" | "diagram";
 
 interface ERDTableTabsProps {
-  data: ERDExtractionResult;
-  onDataChange?: (data: ERDExtractionResult) => void;
+  data: DBExtractionResult;
+  onDataChange?: (data: DBExtractionResult) => void;
   isEditable?: boolean;
   className?: string;
 }
@@ -34,7 +36,7 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
     }
   }, [data.entities, activeTab]);
 
-  const handleEntityChange = (entityName: string, updatedEntity: ERDEntity) => {
+  const handleEntityChange = (entityName: string, updatedEntity: DBEntity) => {
     if (onDataChange) {
       const updatedEntities = data.entities.map((e) => (e.name === entityName ? updatedEntity : e));
       onDataChange({
@@ -74,6 +76,14 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
       </div>
     );
   }
+
+  const { nodes: initialNodes, edges: initialEdges } = layoutChenNotation(data.entities, {
+    useDagreLayout: true,
+    direction: "LR", // Left-to-right layout
+    attributeRadius: 180,
+    nodeSeparation: 0,
+    rankSeparation: 50,
+  });
 
   return (
     <div className={className || "w-full h-[55vh] border rounded-lg bg-background"}>
@@ -147,7 +157,9 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
               </Tabs>
             </div>
           ) : (
-            <div>Implement later</div>
+            <div>
+              <ERDDiagram initialNodes={initialNodes} initialEdges={initialEdges} />
+            </div>
           )}
         </div>
       </div>

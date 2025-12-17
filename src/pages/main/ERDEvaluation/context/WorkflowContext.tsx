@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, type ReactNode } from "react";
 import type { WorkflowStep } from "../index";
 import type {
-  ERDExtractionResult,
+  DBExtractionResult,
   EvaluationWorkflowResponse,
 } from "@/api/services/evaluation-service";
 
@@ -21,8 +21,8 @@ export interface WorkflowData {
   uploadedFile: File | null;
   fileUrl: string | null;
   evaluationId: string | null;
-  extractedData: ERDExtractionResult | null;
-  refinedData: ERDExtractionResult | null;
+  extractedData: DBExtractionResult | null;
+  refinedData: DBExtractionResult | null;
   evaluationResults: EvaluationWorkflowResponse | null;
   selectedLanguage: string; // Language code (e.g., "en", "vi")
   isLoading: boolean;
@@ -39,8 +39,8 @@ export type WorkflowAction =
   | { type: "SET_FILE"; payload: File }
   | { type: "SET_FILE_URL"; payload: string }
   | { type: "SET_EVALUATION_ID"; payload: string }
-  | { type: "SET_EXTRACTED_DATA"; payload: ERDExtractionResult }
-  | { type: "SET_REFINED_DATA"; payload: ERDExtractionResult }
+  | { type: "SET_EXTRACTED_DATA"; payload: DBExtractionResult }
+  | { type: "SET_REFINED_DATA"; payload: DBExtractionResult }
   | { type: "SET_EVALUATION_RESULTS"; payload: EvaluationWorkflowResponse }
   | { type: "SET_SELECTED_LANGUAGE"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
@@ -116,8 +116,8 @@ interface WorkflowContextType {
   setFile: (file: File) => void;
   setFileUrl: (url: string) => void;
   setEvaluationId: (id: string) => void;
-  setExtractedData: (data: ERDExtractionResult) => void;
-  setRefinedData: (data: ERDExtractionResult) => void;
+  setExtractedData: (data: DBExtractionResult) => void;
+  setRefinedData: (data: DBExtractionResult) => void;
   setEvaluationResults: (results: EvaluationWorkflowResponse) => void;
   setSelectedLanguage: (language: string) => void;
   setLoading: (loading: boolean) => void;
@@ -147,9 +147,9 @@ export const WorkflowProvider: React.FC<WorkflowProviderProps> = ({ children }) 
   const setFile = (file: File) => dispatch({ type: "SET_FILE", payload: file });
   const setFileUrl = (url: string) => dispatch({ type: "SET_FILE_URL", payload: url });
   const setEvaluationId = (id: string) => dispatch({ type: "SET_EVALUATION_ID", payload: id });
-  const setExtractedData = (data: ERDExtractionResult) =>
+  const setExtractedData = (data: DBExtractionResult) =>
     dispatch({ type: "SET_EXTRACTED_DATA", payload: data });
-  const setRefinedData = (data: ERDExtractionResult) =>
+  const setRefinedData = (data: DBExtractionResult) =>
     dispatch({ type: "SET_REFINED_DATA", payload: data });
   const setEvaluationResults = (results: EvaluationWorkflowResponse) =>
     dispatch({ type: "SET_EVALUATION_RESULTS", payload: results });

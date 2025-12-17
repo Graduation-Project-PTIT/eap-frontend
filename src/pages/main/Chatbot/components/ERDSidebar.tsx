@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Share2, Save, Loader2 } from "lucide-react";
 import Editor from "@monaco-editor/react";
-import type { ERDEntity } from "@/api/services/evaluation-service";
+import type { DBEntity } from "@/api/services/evaluation-service";
 import ERDDiagram from "@/components/erd/db-diagram-view";
 import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
 import { getEdgesForDBDiagram } from "@/components/erd/db-diagram-view/utils/getEdgesForDBDiagram";
@@ -15,11 +15,11 @@ import { useCreateDiagram } from "@/api/services/diagram-service";
 import { toast } from "@/lib/toast";
 
 interface ERDSidebarProps {
-  schema: { entities: ERDEntity[] } | null;
+  schema: { entities: DBEntity[] } | null;
   ddl: string | null;
   isOpen: boolean;
   onToggle: () => void;
-  onEntityUpdate?: (entity: ERDEntity) => void;
+  onEntityUpdate?: (entity: DBEntity) => void;
   onSaveSchema?: () => void;
   isSchemaDirty?: boolean;
   isSaving?: boolean;

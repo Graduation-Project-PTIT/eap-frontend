@@ -19,13 +19,13 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Save, Key, Link, Type } from "lucide-react";
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 
 interface TableEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  entity: ERDEntity;
-  onSave: (entity: ERDEntity) => void;
+  entity: DBEntity;
+  onSave: (entity: DBEntity) => void;
   availableEntities?: string[];
 }
 
@@ -35,14 +35,14 @@ const TableEditDialog: React.FC<TableEditDialogProps> = ({
   entity,
   onSave,
 }) => {
-  const [editedEntity, setEditedEntity] = useState<ERDEntity>(entity);
+  const [editedEntity, setEditedEntity] = useState<DBEntity>(entity);
 
   useEffect(() => {
     setEditedEntity(entity);
   }, [entity]);
 
   // Helper to create unique key for each attribute (matches handle ID system)
-  const getAttributeKey = (attr: ERDEntity["attributes"][0]) => {
+  const getAttributeKey = (attr: DBEntity["attributes"][0]) => {
     const sanitizedName = attr.name.replace(/[^a-zA-Z0-9]/g, "_");
     const sanitizedType = attr.type.replace(/[^a-zA-Z0-9]/g, "_");
     return `${sanitizedName}-${sanitizedType}`;

@@ -1,8 +1,8 @@
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 import type { Node } from "@xyflow/react";
 import type { DBNodeData } from "../DBNode";
 
-const getNodesForDBDiagram = (entities: ERDEntity[]): Node<DBNodeData>[] => {
+const getNodesForDBDiagram = (entities: DBEntity[]): Node<DBNodeData>[] => {
   return entities.map((entity, index) => ({
     id: `n${index + 1}`,
     position: { x: 0, y: 0 },

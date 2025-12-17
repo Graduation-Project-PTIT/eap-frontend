@@ -7,12 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import ERDTableTabs from "./ERDTableTabs";
 import { MermaidRenderer } from "../MermaidRenderer";
 import Editor from "@monaco-editor/react";
-import type { ERDExtractionResult } from "@/api/services/evaluation-service";
+import type { DBExtractionResult } from "@/api/services/evaluation-service";
 import type { PreferredFormat } from "@/pages/main/ERDEvaluation/context/WorkflowContext";
 
 interface ERDFormatTabsProps {
-  data: ERDExtractionResult;
-  onDataChange?: (data: ERDExtractionResult) => void;
+  data: DBExtractionResult;
+  onDataChange?: (data: DBExtractionResult) => void;
   isEditable?: boolean;
   className?: string;
   preferredFormat?: PreferredFormat;

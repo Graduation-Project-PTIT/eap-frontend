@@ -27,20 +27,20 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Edit3, Database, Plus, Trash2, Save, Key, Link, Type } from "lucide-react";
-import type { ERDEntity } from "@/api";
-import type { ERDAttribute } from "../ERDTableTabs";
+import type { DBEntity } from "@/api";
+import type { DBAttribute } from "../ERDTableTabs";
 
 // EntityTable component for individual entity display
 interface EntityTableProps {
-  entity: ERDEntity;
+  entity: DBEntity;
   isEditable: boolean;
   availableEntities: string[];
-  onEntityChange: (entity: ERDEntity) => void;
+  onEntityChange: (entity: DBEntity) => void;
   onEntityDelete: () => void;
 }
 
 // Helper functions
-const getAttributeIcon = (attribute: ERDAttribute) => {
+const getAttributeIcon = (attribute: DBAttribute) => {
   if (attribute.primaryKey) {
     return <Key className="h-3 w-3 text-yellow-600" />;
   }
@@ -50,7 +50,7 @@ const getAttributeIcon = (attribute: ERDAttribute) => {
   return <Type className="h-3 w-3 text-gray-500" />;
 };
 
-const getAttributeBadgeVariant = (attribute: ERDAttribute) => {
+const getAttributeBadgeVariant = (attribute: DBAttribute) => {
   if (attribute.primaryKey) return "default";
   if (attribute.foreignKey) return "secondary";
   if (attribute.unique) return "outline";
@@ -65,7 +65,7 @@ const EntityTable: React.FC<EntityTableProps> = ({
   onEntityDelete,
 }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editedEntity, setEditedEntity] = useState<ERDEntity>(entity);
+  const [editedEntity, setEditedEntity] = useState<DBEntity>(entity);
 
   // Update edited entity when prop changes
   useEffect(() => {
@@ -110,7 +110,7 @@ const EntityTable: React.FC<EntityTableProps> = ({
     });
   };
 
-  const getRelationshipInfo = (attribute: ERDAttribute) => {
+  const getRelationshipInfo = (attribute: DBAttribute) => {
     if (!attribute.foreignKey || !attribute.foreignKeyTable) return null;
 
     return {

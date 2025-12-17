@@ -18,7 +18,7 @@ import { useWorkflow } from "../context/WorkflowContext";
 import { ERDFormatTabs } from "@/components/erd";
 import { useSendFinishRefinementEvent } from "@/api";
 import { toast } from "@/lib/toast";
-import type { ERDExtractionResult, ERDEntity } from "@/api/services/evaluation-service";
+import type { DBExtractionResult, DBEntity } from "@/api/services/evaluation-service";
 
 interface ManualRefineStepProps {
   onNext: () => void;
@@ -30,7 +30,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Undo functionality
-  const [history, setHistory] = useState<ERDExtractionResult[]>([]);
+  const [history, setHistory] = useState<DBExtractionResult[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoingRef = useRef(false);
   const lastSavedDataRef = useRef<string>("");
@@ -110,7 +110,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleUndo]);
 
-  const handleDataChange = (updatedData: ERDExtractionResult) => {
+  const handleDataChange = (updatedData: DBExtractionResult) => {
     if (!isUndoingRef.current) {
       setRefinedData(updatedData);
     }
@@ -141,8 +141,6 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
     setLoading(true);
 
     // Send the "finish-refinement" event to the workflow with the refined data
-    // Note: dataToSend includes all three formats (entities, ddlScript, mermaidDiagram)
-    // Only the entities (JSON format) can be edited; DDL and Mermaid are read-only from original extraction
     sendFinishRefinement.mutate({
       id: state.evaluationId!,
       extractedInformation: dataToSend,
@@ -150,7 +148,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   };
 
   const handleAddEntity = () => {
-    const newEntity: ERDEntity = {
+    const newEntity: DBEntity = {
       name: "new_entity",
       attributes: [
         {
@@ -306,23 +304,6 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
             Fullscreen
           </Button>
         </div>
-      </div>
-
-      {/* Statistics */}
-      <div className="flex space-x-2">
-        <Badge variant="secondary" className="text-xs">
-          {refinedData.entities.length} entities
-        </Badge>
-        <Badge variant="secondary" className="text-xs">
-          {refinedData.entities.reduce((acc, e) => acc + e.attributes.length, 0)} attributes
-        </Badge>
-        <Badge variant="secondary" className="text-xs">
-          {refinedData.entities.reduce(
-            (acc, e) => acc + e.attributes.filter((a) => a.foreignKey).length,
-            0,
-          )}{" "}
-          relationships
-        </Badge>
       </div>
 
       {/* ERD Format Tabs */}

@@ -15,12 +15,12 @@ import "@xyflow/react/dist/style.css";
 import DBNode, { type DBNodeData } from "@/components/erd/db-diagram-view/DBNode";
 import DBEdge, { type DBEdgeData } from "@/components/erd/db-diagram-view/DBEdge";
 import createDBDiagramEdge from "./utils/createDBDiagramEdge";
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 
 interface DBDiagramProps {
   initialNodes: Node<DBNodeData>[];
   initialEdges: Edge<DBEdgeData>[];
-  onEntityUpdate?: (entity: ERDEntity) => void;
+  onEntityUpdate?: (entity: DBEntity) => void;
 }
 
 const nodeTypes = {

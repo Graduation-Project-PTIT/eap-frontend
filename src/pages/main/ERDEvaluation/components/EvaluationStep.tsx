@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
-import type { ERDExtractionResult } from "@/api/services/evaluation-service";
+import type { DBExtractionResult } from "@/api/services/evaluation-service";
 import { getLanguageByCode } from "@/config/languages";
 
 interface EvaluationStepProps {
@@ -266,7 +266,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       if ("evaluationReport" in result && "extractedInformation" in result) {
         // New format: { extractedInformation, evaluationReport }
         const workflowResult = result as {
-          extractedInformation: ERDExtractionResult;
+          extractedInformation: DBExtractionResult;
           evaluationReport: string;
         };
         evaluationReportText = workflowResult.evaluationReport;
@@ -562,7 +562,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
         if (result && typeof result === "object") {
           if ("extractedInformation" in result && "evaluationReport" in result) {
-            displayData = (result as { extractedInformation: ERDExtractionResult })
+            displayData = (result as { extractedInformation: DBExtractionResult })
               .extractedInformation;
           }
         }

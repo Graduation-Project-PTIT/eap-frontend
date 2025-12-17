@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
 
-export interface ERDEntity {
+export interface DBEntity {
   name: string;
   attributes: Array<{
     name: string;
@@ -17,14 +17,14 @@ export interface ERDEntity {
   }>;
 }
 
-export interface ERDExtractionResult {
-  entities: ERDEntity[];
+export interface DBExtractionResult {
+  entities: DBEntity[];
   ddlScript: string;
   mermaidDiagram: string;
 }
 
 export interface EvaluationWorkflowResult {
-  extractedInformation: ERDExtractionResult;
+  extractedInformation: DBExtractionResult;
   evaluationReport: string;
 }
 
@@ -42,7 +42,7 @@ export interface EvaluationRecord {
   userId: string;
   questionDescription: string;
   fileKey: string;
-  extractedInformation?: ERDExtractionResult;
+  extractedInformation?: DBExtractionResult;
   score?: number;
   evaluationReport?: string;
   workflowRunId: string;
@@ -56,7 +56,7 @@ export interface EvaluationRecord {
 export interface EvaluationWorkflowResponse {
   id: string;
   status: "pending" | "running" | "completed" | "failed" | "waiting";
-  result?: ERDExtractionResult | EvaluationWorkflowResult;
+  result?: DBExtractionResult | EvaluationWorkflowResult;
   error?: string;
   createdAt: string;
   updatedAt: string;
@@ -79,7 +79,7 @@ export interface EvaluationListResponse {
 // Mastra API response format
 export interface MastraWorkflowResponse {
   status: "success" | "failed" | "error" | "running" | "in_progress" | "pending" | "waiting";
-  result?: ERDExtractionResult | EvaluationWorkflowResult;
+  result?: DBExtractionResult | EvaluationWorkflowResult;
   error?: string;
   payload?: Record<string, unknown>;
   steps?: Record<string, unknown>;
@@ -87,7 +87,7 @@ export interface MastraWorkflowResponse {
 
 // Helper function to convert EvaluationRecord to EvaluationWorkflowResponse
 function toWorkflowResponse(record: EvaluationRecord): EvaluationWorkflowResponse {
-  let result: ERDExtractionResult | EvaluationWorkflowResult | undefined;
+  let result: DBExtractionResult | EvaluationWorkflowResult | undefined;
 
   // Build result object based on available data
   if (record.extractedInformation && record.evaluationReport) {
@@ -189,10 +189,7 @@ export const evaluationApi = {
       status = "waiting";
       // When workflow is waiting, check if we have extraction results in steps
       if (data.steps && typeof data.steps === "object") {
-        const steps = data.steps as Record<
-          string,
-          { status: string; output?: ERDExtractionResult }
-        >;
+        const steps = data.steps as Record<string, { status: string; output?: DBExtractionResult }>;
         const extractStep = steps["erdInformationExtractStep"];
         if (extractStep && extractStep.status === "success" && extractStep.output) {
           result = extractStep.output;
@@ -225,7 +222,7 @@ export const evaluationApi = {
   // Send finish-refinement event to workflow
   sendFinishRefinementEvent: async (
     id: string,
-    extractedInformation: ERDExtractionResult,
+    extractedInformation: DBExtractionResult,
   ): Promise<{ success: boolean }> => {
     console.log("sendFinishRefinementEvent - sending event for evaluation:", id);
 
@@ -471,7 +468,7 @@ export const useSendFinishRefinementEvent = ({
       extractedInformation,
     }: {
       id: string;
-      extractedInformation: ERDExtractionResult;
+      extractedInformation: DBExtractionResult;
     }) => evaluationApi.sendFinishRefinementEvent(id, extractedInformation),
     onSuccess: (_, { id }) => {
       // Invalidate the specific evaluation to refresh its status

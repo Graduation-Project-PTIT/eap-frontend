@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 import type { Node, NodeProps } from "@xyflow/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +9,9 @@ import TableEditDialog from "./TableEditDialog";
 import { DBNodeField } from "./DBNodeField";
 
 export type DBNodeData = {
-  entity: ERDEntity;
+  entity: DBEntity;
   isEditable: boolean;
-  onEntityUpdate?: (entity: ERDEntity) => void;
+  onEntityUpdate?: (entity: DBEntity) => void;
 };
 
 type DBNodeProps = Node<DBNodeData, "dbNode">;
@@ -23,7 +23,7 @@ const DBNode = ({ data, selected, id }: NodeProps<DBNodeProps>) => {
 
   const focused = useMemo(() => selected || isHovering, [selected, isHovering]);
 
-  const handleSave = (updatedEntity: ERDEntity) => {
+  const handleSave = (updatedEntity: DBEntity) => {
     if (onEntityUpdate) {
       onEntityUpdate(updatedEntity);
     }

@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import type { ERDEntity } from "@/api";
+import type { DBEntity } from "@/api";
 
 export interface SchemaState {
-  entities: ERDEntity[];
+  entities: DBEntity[];
 }
 
 /**
@@ -78,7 +78,7 @@ export const useSchemaState = (initialSchema: SchemaState | null) => {
    * Update an existing entity in the schema
    * Matches by entity name and replaces the entity
    */
-  const updateEntity = useCallback((updatedEntity: ERDEntity) => {
+  const updateEntity = useCallback((updatedEntity: DBEntity) => {
     setSchema((prev) => {
       if (!prev) return null;
 
@@ -98,7 +98,7 @@ export const useSchemaState = (initialSchema: SchemaState | null) => {
   /**
    * Add a new entity to the schema
    */
-  const addEntity = useCallback((entity: ERDEntity) => {
+  const addEntity = useCallback((entity: DBEntity) => {
     setSchema((prev) => {
       if (!prev) {
         return { entities: [entity] };

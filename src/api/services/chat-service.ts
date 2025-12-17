@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../query-client";
-import type { ERDEntity } from "./evaluation-service";
+import type { DBEntity } from "./evaluation-service";
 import { aiServiceClient } from "@/api";
 
 // Types and Interfaces
@@ -9,7 +9,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  schema?: { entities: ERDEntity[] };
+  schema?: { entities: DBEntity[] };
   ddl?: string;
   runId?: string;
 }
@@ -24,7 +24,7 @@ export interface ChatResponse {
   success: boolean;
   conversationId: string;
   response: string;
-  schema: { entities: ERDEntity[] };
+  schema: { entities: DBEntity[] };
   ddl: string;
   runId: string;
   blocked?: boolean; // Flag indicating if schema creation was blocked
@@ -49,7 +49,7 @@ export interface ConversationHistory {
   success: boolean;
   conversationId: string;
   exists: boolean;
-  schema: { entities: ERDEntity[] } | null;
+  schema: { entities: DBEntity[] } | null;
   currentDdl?: string | null; // Current DDL script from conversation
   thread: {
     title: string;
@@ -61,7 +61,7 @@ export interface ConversationHistory {
     role: "user" | "assistant";
     content: string;
     timestamp: string;
-    schema?: { entities: ERDEntity[] };
+    schema?: { entities: DBEntity[] };
     ddl?: string;
     runId?: string;
     intent?: string;
@@ -100,7 +100,7 @@ export const chatApi = {
   // Update conversation schema - PUT /ai/chat/:conversationId/schema
   updateConversationSchema: async (
     conversationId: string,
-    schema: { entities: ERDEntity[] },
+    schema: { entities: DBEntity[] },
     regenerateDDL = true,
   ): Promise<ChatResponse> => {
     const response = await aiServiceClient.put<ChatResponse>(`/chat/${conversationId}/schema`, {
@@ -171,7 +171,7 @@ export const useUpdateConversationSchema = () => {
       regenerateDDL,
     }: {
       conversationId: string;
-      schema: { entities: ERDEntity[] };
+      schema: { entities: DBEntity[] };
       regenerateDDL?: boolean;
     }) => chatApi.updateConversationSchema(conversationId, schema, regenerateDDL),
 

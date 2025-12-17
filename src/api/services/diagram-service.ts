@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { diagramServiceClient } from "../client";
-import type { ERDEntity } from "./evaluation-service";
+import type { DBEntity } from "./evaluation-service";
 
 // Types
 export interface DiagramSchema {
-  entities: ERDEntity[];
+  entities: DBEntity[];
 }
 
 export interface CreateDiagramInput {
