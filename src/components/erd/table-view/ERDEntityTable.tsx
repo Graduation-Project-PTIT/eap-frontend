@@ -27,8 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Edit3, Database, Plus, Trash2, Save, Key, Link, Type } from "lucide-react";
-import type { DBEntity } from "@/api";
-import type { DBAttribute } from "../ERDTableTabs";
+import type { DBAttribute, DBEntity } from "@/api";
 
 // EntityTable component for individual entity display
 interface EntityTableProps {

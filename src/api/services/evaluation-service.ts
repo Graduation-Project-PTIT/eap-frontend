@@ -4,17 +4,19 @@ import { queryKeys } from "../query-client";
 
 export interface DBEntity {
   name: string;
-  attributes: Array<{
-    name: string;
-    type: string;
-    primaryKey: boolean;
-    foreignKey: boolean;
-    unique: boolean;
-    nullable: boolean;
-    foreignKeyTable?: string;
-    foreignKeyAttribute?: string;
-    relationType?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
-  }>;
+  attributes: DBAttribute[];
+}
+
+export interface DBAttribute {
+  name: string;
+  type: string;
+  primaryKey: boolean;
+  foreignKey: boolean;
+  unique: boolean;
+  nullable: boolean;
+  foreignKeyTable?: string;
+  foreignKeyAttribute?: string;
+  relationType?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
 }
 
 export interface DBExtractionResult {

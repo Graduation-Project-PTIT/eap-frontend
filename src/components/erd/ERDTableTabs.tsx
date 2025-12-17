@@ -8,9 +8,6 @@ import EntityTable from "./table-view/ERDEntityTable";
 import ERDDiagram from "./erd-diagram-view";
 import { layoutChenNotation } from "./erd-diagram-view/utils/layoutChenNotation";
 
-// Define the attribute type based on the ERDEntity interface
-export type DBAttribute = DBEntity["attributes"][0];
-
 type ViewMode = "table" | "diagram";
 
 interface ERDTableTabsProps {

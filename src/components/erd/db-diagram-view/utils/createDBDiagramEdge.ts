@@ -1,8 +1,8 @@
 import type { Node } from "@xyflow/react";
 import type { DBNodeData } from "../DBNode";
-import type { DBAttribute } from "../../ERDTableTabs";
 import { createLeftHandleId, createTargetHandleId } from "../handle-constants";
 import type { DBEdgeData } from "../DBEdge";
+import type { DBAttribute } from "@/api";
 
 interface CreateDBDiagramEdgeParams {
   sourceNode: Node<DBNodeData>;

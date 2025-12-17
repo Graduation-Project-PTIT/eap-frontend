@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Save, Key, Link, Type } from "lucide-react";
-import type { DBEntity } from "@/api";
+import type { DBAttribute, DBEntity } from "@/api";
 
 interface TableEditDialogProps {
   open: boolean;
@@ -42,7 +42,7 @@ const TableEditDialog: React.FC<TableEditDialogProps> = ({
   }, [entity]);
 
   // Helper to create unique key for each attribute (matches handle ID system)
-  const getAttributeKey = (attr: DBEntity["attributes"][0]) => {
+  const getAttributeKey = (attr: DBAttribute) => {
     const sanitizedName = attr.name.replace(/[^a-zA-Z0-9]/g, "_");
     const sanitizedType = attr.type.replace(/[^a-zA-Z0-9]/g, "_");
     return `${sanitizedName}-${sanitizedType}`;

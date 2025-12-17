@@ -55,14 +55,8 @@ export interface ERDAttribute {
 export interface ERDEntity {
   name: string;
   attributes: ERDAttribute[];
-
-  // Entity classification
   isWeakEntity: boolean; // Double rectangle - depends on another entity
-
-  // Weak entity relationship
   identifyingEntity?: string; // The strong entity this weak entity depends on
-
-  // Optional metadata
   description?: string;
 }
 
