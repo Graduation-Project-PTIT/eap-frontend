@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDiagram, useDeleteDiagram } from "@/api/services/diagram-service";
-import { ArrowLeft, Eye, Calendar, Trash2, Download } from "lucide-react";
+import { useDiagram, useDeleteDiagram, useUpdateDiagram } from "@/api/services/diagram-service";
+import { ArrowLeft, Eye, Calendar, Trash2, Download, Globe } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/lib/toast";
 import VoteButtons from "./components/VoteButtons";
@@ -30,15 +30,18 @@ import usePermissions from "@/hooks/use-permissions";
 import VerificationBadge from "./components/VerificationBadge";
 import TeacherActions from "./components/TeacherActions";
 import FeedbackSection from "./components/FeedbackSection";
+import PublishDiagramDialog from "./components/PublishDiagramDialog";
 
 const DiagramDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   const { data: diagram, isLoading, error } = useDiagram(id!);
   const deleteMutation = useDeleteDiagram();
+  const updateMutation = useUpdateDiagram();
   const { isTeacher } = usePermissions();
 
   // Get current user
@@ -85,6 +88,21 @@ const DiagramDetail = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handlePublish = async () => {
+    if (!diagram) return;
+
+    try {
+      await updateMutation.mutateAsync({
+        id: diagram.id,
+        data: { visibility: "Public" },
+      });
+      toast.success("Diagram published successfully!");
+      setShowPublishDialog(false);
+    } catch {
+      toast.error("Failed to publish diagram");
+    }
   };
 
   const getVisibilityColor = (visibility: string) => {
@@ -157,15 +175,31 @@ const DiagramDetail = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <VoteButtons
-                diagramId={diagram.id}
-                upvoteCount={diagram.upvoteCount}
-                downvoteCount={diagram.downvoteCount}
-                userVote={diagram.userVote}
-                isOwner={!!isOwner}
-              />
-              {isTeacher() && (
-                <TeacherActions diagramId={diagram.id} isVerified={diagram.isVerified} />
+              {/* Hide voting and verification for private diagrams */}
+              {diagram.visibility !== "Private" && (
+                <>
+                  <VoteButtons
+                    diagramId={diagram.id}
+                    upvoteCount={diagram.upvoteCount}
+                    downvoteCount={diagram.downvoteCount}
+                    userVote={diagram.userVote}
+                    isOwner={!!isOwner}
+                  />
+                  {isTeacher() && (
+                    <TeacherActions diagramId={diagram.id} isVerified={diagram.isVerified} />
+                  )}
+                </>
+              )}
+              {isOwner && diagram.visibility === "Private" && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowPublishDialog(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Publish
+                </Button>
               )}
               {isOwner && (
                 <Button
@@ -184,10 +218,13 @@ const DiagramDetail = () => {
           {/* Metadata */}
           <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground flex-wrap">
             {diagram.author && <span>by {diagram.author.username}</span>}
-            <div className="flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              <span>{diagram.viewCount} views</span>
-            </div>
+            {/* Hide view count for private diagrams */}
+            {diagram.visibility !== "Private" && (
+              <div className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                <span>{diagram.viewCount} views</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
               <span>{formatDistanceToNow(new Date(diagram.createdAt), { addSuffix: true })}</span>
@@ -215,8 +252,8 @@ const DiagramDetail = () => {
                   <ERDDiagram initialNodes={nodes} initialEdges={edges} />
                 </Card>
 
-                {/* Feedback Section (GitHub PR-style) */}
-                <FeedbackSection diagramId={diagram.id} />
+                {/* Hide Feedback Section for private diagrams */}
+                {diagram.visibility !== "Private" && <FeedbackSection diagramId={diagram.id} />}
               </div>
             </TabsContent>
 
@@ -275,6 +312,14 @@ const DiagramDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Publish Confirmation Dialog */}
+      <PublishDiagramDialog
+        open={showPublishDialog}
+        onClose={() => setShowPublishDialog(false)}
+        onConfirm={handlePublish}
+        isLoading={updateMutation.isPending}
+      />
     </div>
   );
 };

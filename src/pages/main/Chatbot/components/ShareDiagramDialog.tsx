@@ -25,7 +25,7 @@ interface ShareDiagramDialogProps {
   onSubmit: (data: {
     title: string;
     description: string;
-    visibility: "public" | "private";
+    visibility: "Public" | "Private";
   }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -33,7 +33,7 @@ interface ShareDiagramDialogProps {
 const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagramDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const [visibility, setVisibility] = useState<"Public" | "Private">("Private");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +45,7 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
     // Reset form
     setTitle("");
     setDescription("");
-    setVisibility("private");
+    setVisibility("Private");
   };
 
   return (
@@ -81,14 +81,14 @@ const ShareDiagramDialog = ({ open, onClose, onSubmit, isLoading }: ShareDiagram
             <Label htmlFor="visibility">Visibility *</Label>
             <Select
               value={visibility}
-              onValueChange={(value) => setVisibility(value as "public" | "private")}
+              onValueChange={(value) => setVisibility(value as "Public" | "Private")}
             >
               <SelectTrigger id="visibility">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="private">Private (Only me)</SelectItem>
-                <SelectItem value="public">Public (Everyone)</SelectItem>
+                <SelectItem value="Private">Private - Only visible to you</SelectItem>
+                <SelectItem value="Public">Public - Visible in gallery to everyone</SelectItem>
               </SelectContent>
             </Select>
           </div>

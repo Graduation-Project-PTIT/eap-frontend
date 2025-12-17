@@ -13,7 +13,7 @@ export interface CreateDiagramInput {
   schemaJson: DiagramSchema;
   ddlScript: string;
   domain?: string;
-  visibility: "public" | "private" | "class";
+  visibility: "Public" | "Private" | "Class";
   classId?: string;
 }
 
@@ -23,7 +23,7 @@ export interface UpdateDiagramInput {
   schemaJson?: DiagramSchema;
   ddlScript?: string;
   domain?: string;
-  visibility?: "public" | "private" | "class";
+  visibility?: "Public" | "Private" | "Class";
   classId?: string;
 }
 
@@ -35,7 +35,7 @@ export interface DiagramResponse {
   schemaJson: DiagramSchema;
   ddlScript: string;
   domain?: string;
-  visibility: "public" | "private" | "class";
+  visibility: "Public" | "Private" | "Class";
   classId?: string;
   viewCount: number;
   upvoteCount: number;
