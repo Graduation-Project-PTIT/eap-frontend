@@ -14,8 +14,6 @@ const App = () => {
   const { pathname } = useLocation();
   const isOnAuthRoute = pathname.startsWith(ROUTES.AUTH.ROOT);
 
-  console.log("Test");
-
   useEffect(() => {
     configureAmplify();
     setIsConfigured(true);

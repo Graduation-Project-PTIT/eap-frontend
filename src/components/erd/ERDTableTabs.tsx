@@ -3,16 +3,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, Grid3x3, TableIcon } from "lucide-react";
-import { type DBExtractionResult, type DBEntity } from "@/api/services/evaluation-service";
+import {
+  type DBExtractionResult,
+  type DBEntity,
+  type ERDExtractionResult,
+} from "@/api/services/evaluation-service";
 import EntityTable from "./table-view/ERDEntityTable";
 import ERDDiagram from "./erd-diagram-view";
-import { layoutChenNotation } from "./erd-diagram-view/utils/layoutChenNotation";
+import {
+  layoutChenNotation,
+  type ERDLayoutResult,
+} from "./erd-diagram-view/utils/layoutChenNotation";
 
 type ViewMode = "table" | "diagram";
 
 interface ERDTableTabsProps {
-  data: DBExtractionResult;
-  onDataChange?: (data: DBExtractionResult) => void;
+  data: DBExtractionResult | ERDExtractionResult;
+  onDataChange?: (data: DBExtractionResult | ERDExtractionResult) => void;
   isEditable?: boolean;
   className?: string;
 }
@@ -25,6 +32,30 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>(data.entities[0]?.name || "");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [layoutResult, setLayoutResult] = useState<ERDLayoutResult>(() => {
+    if (data.type === "ERD") {
+      return layoutChenNotation(data.entities, data.relationships, {
+        useDagreLayout: true,
+        direction: "LR", // Left-to-right layout
+        attributeRadius: 180,
+        nodeSeparation: 0,
+        rankSeparation: 50,
+      });
+    } else return { nodes: [], edges: [] };
+  });
+
+  useEffect(() => {
+    if (data.type === "ERD") {
+      const newLayout = layoutChenNotation(data.entities, data.relationships, {
+        useDagreLayout: true,
+        direction: "LR", // Left-to-right layout
+        attributeRadius: 180,
+        nodeSeparation: 0,
+        rankSeparation: 50,
+      });
+      setLayoutResult(newLayout);
+    }
+  }, [data]);
 
   // Update active tab when data changes
   useEffect(() => {
@@ -34,9 +65,10 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
   }, [data.entities, activeTab]);
 
   const handleEntityChange = (entityName: string, updatedEntity: DBEntity) => {
-    if (onDataChange) {
+    if (onDataChange && data.type === "PHYSICAL_DB") {
       const updatedEntities = data.entities.map((e) => (e.name === entityName ? updatedEntity : e));
       onDataChange({
+        type: "PHYSICAL_DB",
         entities: updatedEntities,
         ddlScript: data.ddlScript,
         mermaidDiagram: data.mermaidDiagram,
@@ -45,9 +77,10 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
   };
 
   const handleDeleteEntity = (entityName: string) => {
-    if (onDataChange) {
+    if (onDataChange && data.type === "PHYSICAL_DB") {
       const updatedEntities = data.entities.filter((e) => e.name !== entityName);
       onDataChange({
+        type: "PHYSICAL_DB",
         entities: updatedEntities,
         ddlScript: data.ddlScript,
         mermaidDiagram: data.mermaidDiagram,
@@ -73,14 +106,6 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
       </div>
     );
   }
-
-  const { nodes: initialNodes, edges: initialEdges } = layoutChenNotation(data.entities, {
-    useDagreLayout: true,
-    direction: "LR", // Left-to-right layout
-    attributeRadius: 180,
-    nodeSeparation: 0,
-    rankSeparation: 50,
-  });
 
   return (
     <div className={className || "w-full h-[55vh] border rounded-lg bg-background"}>
@@ -154,8 +179,8 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
               </Tabs>
             </div>
           ) : (
-            <div>
-              <ERDDiagram initialNodes={initialNodes} initialEdges={initialEdges} />
+            <div className="h-full w-full">
+              <ERDDiagram initialNodes={layoutResult.nodes} initialEdges={layoutResult.edges} />
             </div>
           )}
         </div>

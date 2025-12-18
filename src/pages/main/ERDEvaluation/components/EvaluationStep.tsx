@@ -3,40 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  CheckCircle,
-  Download,
-  Save,
-  ChevronDown,
-  FileText,
-  Eye,
-  Copy,
-  Languages,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle, FileText, Eye, Copy, Languages } from "lucide-react";
 import { useWorkflow } from "../context/WorkflowContext";
-import { ERDTableTabs, ERDFormatTabs } from "@/components/erd";
+import { ERDTableTabs } from "@/components/erd";
 import { useEvaluation, useTranslateEvaluation } from "@/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
-import {
-  exportAsJSON,
-  exportAsCSV,
-  exportAsPDF,
-  saveToHistory,
-  generateReportId,
-  type EvaluationReport,
-} from "../utils/exportUtils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
-import type { DBExtractionResult } from "@/api/services/evaluation-service";
+import type { EvaluationWorkflowResult } from "@/api/services/evaluation-service";
 import { getLanguageByCode } from "@/config/languages";
 
 interface EvaluationStepProps {
@@ -44,7 +19,7 @@ interface EvaluationStepProps {
 }
 
 const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
-  const { state, resetWorkflow, setEvaluationResults } = useWorkflow();
+  const { state, setEvaluationResults } = useWorkflow();
 
   // State for toggling between rendered and raw markdown
   const [showRawMarkdown, setShowRawMarkdown] = useState(false);
@@ -66,34 +41,20 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   // Translation hook
   const translateEvaluation = useTranslateEvaluation({
     onSuccess: (data) => {
-      console.log("=== Translation Success Callback ===");
-      console.log("Translation success, data:", {
-        hasTranslatedReport: !!data.translatedReport,
-        translatedReportLength: data.translatedReport?.length,
-        first100Chars: data.translatedReport?.substring(0, 100),
-      });
-
       if (data.translatedReport) {
-        console.log("Setting translated report and updating state...");
         setTranslatedReport(data.translatedReport);
         setIsTranslating(false);
 
-        // Now that translation is complete, set the evaluation results
         if (workflowEvaluation) {
-          console.log("Setting evaluation results after translation");
           setEvaluationResults(workflowEvaluation);
         } else {
           console.warn("workflowEvaluation is not available after translation");
         }
-
-        console.log("Translation complete - UI should update now");
-        // No toast notification - translation is transparent to the user
       } else {
         console.error("Translation returned empty result, data:", data);
         setIsTranslating(false);
         // Show English version if translation fails
         if (workflowEvaluation) {
-          console.log("Falling back to English version");
           setEvaluationResults(workflowEvaluation);
         }
         // Silent fallback to English - no error shown to user
@@ -106,10 +67,8 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
       setIsTranslating(false);
       // Show English version if translation fails
       if (workflowEvaluation) {
-        console.log("Falling back to English version due to error");
         setEvaluationResults(workflowEvaluation);
       }
-      // Silent fallback to English - no error shown to user
       console.warn("Translation failed, falling back to English version");
     },
   });
@@ -123,17 +82,24 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
   // Update workflow state when evaluation completes
   useEffect(() => {
-    if (workflowEvaluation?.status === "completed" && workflowEvaluation.result) {
-      // Check if we have evaluation report in the new result
+    if (
+      workflowEvaluation?.status === "completed" &&
+      workflowEvaluation.result &&
+      ("erdEvaluationStep" in workflowEvaluation.result ||
+        "dbEvaluationStep" in workflowEvaluation.result)
+    ) {
+      const workflowResult = workflowEvaluation.result as EvaluationWorkflowResult;
       const hasEvaluationReport =
-        typeof workflowEvaluation.result === "object" &&
-        "evaluationReport" in workflowEvaluation.result;
+        "erdEvaluationStep" in workflowResult || "dbEvaluationStep" in workflowResult;
 
       // Check if current state has evaluation report
       const stateHasEvaluationReport =
         state.evaluationResults?.result &&
         typeof state.evaluationResults.result === "object" &&
-        "evaluationReport" in state.evaluationResults.result;
+        (("erdEvaluationStep" in state.evaluationResults.result &&
+          state.evaluationResults.result.erdEvaluationStep?.evaluationReport) ||
+          ("dbEvaluationStep" in state.evaluationResults.result &&
+            state.evaluationResults.result.dbEvaluationStep?.evaluationReport));
 
       // Update if we don't have results yet, or if we have new results with evaluation report
       if (
@@ -159,42 +125,29 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
 
   // Automatic translation when evaluation completes and language is not English
   useEffect(() => {
-    console.log("=== Translation Trigger Check ===", {
-      workflowStatus: workflowEvaluation?.status,
-      hasResult: !!workflowEvaluation?.result,
-      hasEvaluationReport:
-        workflowEvaluation?.result &&
-        typeof workflowEvaluation.result === "object" &&
-        "evaluationReport" in workflowEvaluation.result,
-      selectedLanguage: state.selectedLanguage,
-      hasEvaluationId: !!state.evaluationId,
-      translationAttempted,
-      isTranslating,
-      hasTranslatedReport: !!translatedReport,
-    });
-
     if (
       workflowEvaluation?.status === "completed" &&
       workflowEvaluation.result &&
       typeof workflowEvaluation.result === "object" &&
-      "evaluationReport" in workflowEvaluation.result &&
+      (("erdEvaluationStep" in workflowEvaluation.result &&
+        workflowEvaluation.result.erdEvaluationStep?.evaluationReport) ||
+        ("dbEvaluationStep" in workflowEvaluation.result &&
+          workflowEvaluation.result.dbEvaluationStep?.evaluationReport)) &&
       state.selectedLanguage !== "en" &&
       state.evaluationId &&
       !translationAttempted &&
       !isTranslating &&
       !translatedReport // Don't translate if we already have a translation
     ) {
-      const evaluationReport = (workflowEvaluation.result as { evaluationReport: string })
-        .evaluationReport;
+      const evaluationReport =
+        workflowEvaluation.result.erdEvaluationStep?.evaluationReport ||
+        workflowEvaluation.result.dbEvaluationStep?.evaluationReport ||
+        "";
 
-      console.log("=== Starting Translation ===");
       setIsTranslating(true);
       setTranslationAttempted(true);
 
       const language = getLanguageByCode(state.selectedLanguage);
-      console.log(`Auto-translating evaluation report to ${language.nativeName}...`);
-      console.log("Evaluation report length:", evaluationReport?.length);
-      console.log("First 100 chars:", evaluationReport?.substring(0, 100));
 
       translateEvaluation.mutate({
         evaluationId: state.evaluationId,
@@ -216,14 +169,14 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
   const hasActualResultsFromState =
     state.evaluationResults?.status === "completed" &&
     state.evaluationResults.result &&
-    typeof state.evaluationResults.result === "object" &&
-    "evaluationReport" in state.evaluationResults.result;
+    ("erdEvaluationStep" in state.evaluationResults.result ||
+      "dbEvaluationStep" in state.evaluationResults.result);
 
   const hasActualResultsFromPolling =
     workflowEvaluation?.status === "completed" &&
     workflowEvaluation.result &&
-    typeof workflowEvaluation.result === "object" &&
-    "evaluationReport" in workflowEvaluation.result;
+    ("erdEvaluationStep" in workflowEvaluation.result ||
+      "dbEvaluationStep" in workflowEvaluation.result);
 
   const hasActualResults = hasActualResultsFromState || hasActualResultsFromPolling;
 
@@ -247,106 +200,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
     }
   }, [isLoading, hasActualResults]);
 
-  const handleStartNewEvaluation = () => {
-    resetWorkflow();
-  };
-
-  const createReport = (): EvaluationReport => {
-    // Extract the evaluation report from the workflow results
-    let evaluationReportText = "Evaluation report not available";
-    let finalEvaluatedData = finalData || { entities: [], ddlScript: "", mermaidDiagram: "" };
-
-    // Try to get result from polling data first (most up-to-date), then from state
-    let result = workflowEvaluation?.result;
-    if (!result && state.evaluationResults?.result) {
-      result = state.evaluationResults.result;
-    }
-
-    if (result && typeof result === "object") {
-      if ("evaluationReport" in result && "extractedInformation" in result) {
-        // New format: { extractedInformation, evaluationReport }
-        const workflowResult = result as {
-          extractedInformation: DBExtractionResult;
-          evaluationReport: string;
-        };
-        evaluationReportText = workflowResult.evaluationReport;
-        finalEvaluatedData = workflowResult.extractedInformation;
-      } else if ("evaluationReport" in result) {
-        // Legacy format: { evaluationReport }
-        evaluationReportText = String((result as { evaluationReport: string }).evaluationReport);
-      }
-    }
-
-    // Use translated report if available
-    if (translatedReport) {
-      evaluationReportText = translatedReport;
-    }
-
-    return {
-      id: generateReportId(),
-      timestamp: new Date().toISOString(),
-      questionDescription: state.questionDescription,
-      originalData: state.extractedData || { entities: [], ddlScript: "", mermaidDiagram: "" },
-      refinedData: finalEvaluatedData,
-      evaluationReport: evaluationReportText,
-    };
-  };
-
-  const handleSaveToHistory = () => {
-    try {
-      const report = createReport();
-      saveToHistory(report);
-      toast.success("Evaluation saved to history successfully!");
-    } catch (error) {
-      console.error("Failed to save to history:", error);
-      toast.error("Failed to save to history. Please try again.");
-    }
-  };
-
-  const handleExportJSON = () => {
-    try {
-      const report = createReport();
-      exportAsJSON(report);
-      toast.success("Report exported as JSON successfully!");
-    } catch (error) {
-      console.error("Failed to export JSON:", error);
-      toast.error("Failed to export report. Please try again.");
-    }
-  };
-
-  const handleExportCSV = () => {
-    try {
-      const report = createReport();
-      exportAsCSV(report);
-      toast.success("Report exported as CSV successfully!");
-    } catch (error) {
-      console.error("Failed to export CSV:", error);
-      toast.error("Failed to export report. Please try again.");
-    }
-  };
-
-  const handleExportPDF = () => {
-    try {
-      const report = createReport();
-      exportAsPDF(report);
-      toast.success("Report exported as text file successfully!");
-    } catch (error) {
-      console.error("Failed to export PDF:", error);
-      toast.error("Failed to export report. Please try again.");
-    }
-  };
-
-  // Show loading state while waiting for evaluation results OR translation
-  // Keep the same message for both to make translation transparent
-  console.log("=== Loading State Check ===", {
-    isLoading,
-    isTranslating,
-    hasEvaluationResults: !!state.evaluationResults,
-    shouldShowLoading: isLoading || (isTranslating && !state.evaluationResults),
-  });
-
   if (isLoading || (isTranslating && !state.evaluationResults)) {
-    console.log("Showing loading screen...");
     return (
       <div className="space-y-6">
         <Card>
@@ -402,9 +256,6 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               AI Evaluation Report
-              <Badge variant="secondary" className="text-xs">
-                Evaluated using: {state.preferredFormat.toUpperCase()}
-              </Badge>
               {state.selectedLanguage !== "en" && (
                 <span className="text-sm font-normal text-muted-foreground flex items-center gap-1">
                   <Languages className="h-4 w-4" />
@@ -445,7 +296,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
                   result = state.evaluationResults.result;
                 }
 
-                if (!result || typeof result !== "object") {
+                if (!result || !("erdEvaluationStep" in result || "dbEvaluationStep" in result)) {
                   return <p className="text-muted-foreground">Evaluation report not available</p>;
                 }
 
@@ -455,17 +306,18 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
                 if (translatedReport) {
                   evaluationReport = translatedReport;
                 } else {
-                  // New format: { extractedInformation, evaluationReport }
                   if ("evaluationReport" in result && "extractedInformation" in result) {
                     evaluationReport = (result as { evaluationReport: string }).evaluationReport;
-                  }
-                  // Legacy format: { evaluationReport }
-                  else if ("evaluationReport" in result) {
+                  } else if ("evaluationReport" in result) {
                     evaluationReport = String(
                       (result as { evaluationReport: string }).evaluationReport,
                     );
+                  } else if ("erdEvaluationStep" in result) {
+                    evaluationReport = result.erdEvaluationStep?.evaluationReport || "";
+                  } else if ("dbEvaluationStep" in result) {
+                    evaluationReport = result.dbEvaluationStep?.evaluationReport || "";
                   } else {
-                    return <p className="text-muted-foreground">Evaluation report not available</p>;
+                    evaluationReport = "Evaluation report not available";
                   }
                 }
 
@@ -545,72 +397,6 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
                 }
               })()}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Final ERD Visualization */}
-      {(() => {
-        // Use the final evaluated data from the workflow if available, otherwise use refined/extracted data
-        let displayData = finalData;
-
-        // Try to get result from polling data first (most up-to-date), then from state
-        let result = workflowEvaluation?.result;
-        if (!result && state.evaluationResults?.result) {
-          result = state.evaluationResults.result;
-        }
-
-        if (result && typeof result === "object") {
-          if ("extractedInformation" in result && "evaluationReport" in result) {
-            displayData = (result as { extractedInformation: DBExtractionResult })
-              .extractedInformation;
-          }
-        }
-
-        if (displayData && displayData.entities.length > 0) {
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Final ERD Structure</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ERDFormatTabs
-                  data={displayData}
-                  isEditable={false}
-                  preferredFormat={state.preferredFormat}
-                  className="h-[60vh]"
-                />
-              </CardContent>
-            </Card>
-          );
-        }
-
-        return null;
-      })()}
-
-      {/* Actions */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Button variant="outline" onClick={handleSaveToHistory}>
-              <Save className="h-4 w-4 mr-2" />
-              Save to History
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Report
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleExportJSON}>Export as JSON</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportCSV}>Export as CSV</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportPDF}>Export as Text</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={handleStartNewEvaluation}>Start New Evaluation</Button>
           </div>
         </CardContent>
       </Card>

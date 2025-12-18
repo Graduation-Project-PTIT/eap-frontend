@@ -16,7 +16,7 @@ const HistorySidebar: FC<HistorySidebarProps> = ({ isOpen, onToggle }) => {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   // Fetch evaluations from API with auto-refresh
-  const { data: evaluations = [], isLoading, error } = useEvaluations({});
+  const { data: evaluations = [], isLoading, error } = useEvaluations({ limit: 10 });
 
   // Sort evaluations by creation date (newest first)
   const sortedEvaluations = [...evaluations].sort(

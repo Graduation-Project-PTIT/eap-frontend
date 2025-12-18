@@ -8,6 +8,7 @@ import type {
   ERDAttributeNodeData,
   ERDRelationshipNodeData,
   ERDEdgeData,
+  ERDRelationship,
 } from "../types";
 import { ERD_NODE_TYPES, ERD_EDGE_TYPES } from "../types";
 
@@ -143,44 +144,12 @@ const calculateEntitySectionSize = (
 };
 
 /**
- * Relationship info extracted from entities for graph building
- */
-type RelationshipInfo = {
-  name: string;
-  sourceEntity: string;
-  targetEntity: string;
-  relationType?: ERDRelationshipNodeData["relationType"];
-};
-
-/**
- * Extract relationships from entities (from foreign key attributes)
- */
-const extractRelationships = (entities: ERDEntity[]): RelationshipInfo[] => {
-  const relationships: RelationshipInfo[] = [];
-
-  entities.forEach((entity) => {
-    entity.attributes.forEach((attribute) => {
-      if (attribute.foreignKey && attribute.foreignKeyTable) {
-        relationships.push({
-          name: attribute.relationshipName || `${entity.name}_${attribute.foreignKeyTable}`,
-          sourceEntity: entity.name,
-          targetEntity: attribute.foreignKeyTable,
-          relationType: attribute.relationType,
-        });
-      }
-    });
-  });
-
-  return relationships;
-};
-
-/**
  * Build a dagre graph for layout calculation.
  * Entity sections and relationships are nodes; edges connect them.
  */
 const buildDagreGraph = (
   entities: ERDEntity[],
-  relationships: RelationshipInfo[],
+  relationships: ERDRelationship[],
   opts: Required<LayoutOptions>,
 ): dagre.graphlib.Graph => {
   const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
@@ -206,11 +175,8 @@ const buildDagreGraph = (
     });
   });
 
-  // Deduplicate relationships first
-  const uniqueRelationships = deduplicateRelationships(relationships);
-
   // Add relationship nodes and edges
-  uniqueRelationships.forEach((rel) => {
+  relationships.forEach((rel) => {
     const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
 
     // Add relationship node
@@ -232,6 +198,11 @@ const buildDagreGraph = (
 // Layout Chen Notation - Main Function
 // ============================================================================
 
+export interface ERDLayoutResult {
+  nodes: Node<ERDNodeData>[];
+  edges: Edge<ERDEdgeData>[];
+}
+
 /**
  * Generate nodes and edges for an ERD diagram using Chen notation layout.
  * Each entity is the center of a cluster with its attributes arranged in a circle.
@@ -243,15 +214,12 @@ const buildDagreGraph = (
  */
 export const layoutChenNotation = (
   entities: ERDEntity[],
+  relationships: ERDRelationship[],
   options?: LayoutOptions,
-): { nodes: Node<ERDNodeData>[]; edges: Edge<ERDEdgeData>[] } => {
+): ERDLayoutResult => {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const nodes: Node<ERDNodeData>[] = [];
   const edges: Edge<ERDEdgeData>[] = [];
-
-  // Extract relationships from foreign key attributes
-  const relationships = extractRelationships(entities);
-  const uniqueRelationships = deduplicateRelationships(relationships);
 
   // Map to store entity positions for edge creation
   const entityPositions: Map<string, Position> = new Map();
@@ -303,7 +271,7 @@ export const layoutChenNotation = (
     });
 
     // Extract relationship positions from dagre
-    uniqueRelationships.forEach((rel) => {
+    relationships.forEach((rel) => {
       const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
       const dagreNode = dagreGraph.node(relationshipId);
 
@@ -353,7 +321,7 @@ export const layoutChenNotation = (
     });
 
     // Calculate relationship positions (midpoint between entities)
-    uniqueRelationships.forEach((rel) => {
+    relationships.forEach((rel) => {
       const sourcePos = entityPositions.get(rel.sourceEntity);
       const targetPos = entityPositions.get(rel.targetEntity);
 
@@ -369,7 +337,7 @@ export const layoutChenNotation = (
   }
 
   // Create relationship nodes and edges (same for both layout modes)
-  uniqueRelationships.forEach((rel) => {
+  relationships.forEach((rel) => {
     const relationshipId = `rel-${rel.sourceEntity}-${rel.targetEntity}`;
     const sourcePos = entityPositions.get(rel.sourceEntity);
     const targetPos = entityPositions.get(rel.targetEntity);
@@ -522,23 +490,6 @@ const createAttributeNodesWithLayout = (
       );
     });
   }
-};
-
-/**
- * Deduplicate relationships (A->B is same as B->A)
- */
-const deduplicateRelationships = <T extends { sourceEntity: string; targetEntity: string }>(
-  relationships: T[],
-): T[] => {
-  return relationships.filter(
-    (rel, index, self) =>
-      index ===
-      self.findIndex(
-        (r) =>
-          (r.sourceEntity === rel.sourceEntity && r.targetEntity === rel.targetEntity) ||
-          (r.sourceEntity === rel.targetEntity && r.targetEntity === rel.sourceEntity),
-      ),
-  );
 };
 
 /**

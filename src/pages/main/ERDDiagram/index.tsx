@@ -3,7 +3,7 @@ import { layoutChenNotation } from "@/components/erd/erd-diagram-view/utils/layo
 import mockData from "./mock";
 
 // Use dagre layout for automatic positioning of entity sections and relationships
-const { nodes: initialNodes, edges: initialEdges } = layoutChenNotation(mockData.entities, {
+const { nodes: initialNodes, edges: initialEdges } = layoutChenNotation(mockData.entities, [], {
   useDagreLayout: true,
   direction: "LR", // Left-to-right layout
   attributeRadius: 180,

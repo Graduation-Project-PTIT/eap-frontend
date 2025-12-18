@@ -64,7 +64,6 @@ const DBDiagram = ({ initialNodes, initialEdges, onEntityUpdate }: DBDiagramProp
 
   const onConnectEnd: OnConnectEnd = useCallback(
     (_event, connectionState: FinalConnectionState) => {
-      console.log(connectionState);
       const { fromNode, toNode, fromHandle, toHandle } = connectionState;
 
       // Only create edge if we have both nodes and handles

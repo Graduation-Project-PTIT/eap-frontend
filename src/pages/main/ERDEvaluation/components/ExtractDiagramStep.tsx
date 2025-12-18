@@ -33,18 +33,9 @@ const ExtractDiagramStep: FC<ExtractDiagramStepProps> = ({ onNext, onBack }) => 
       evaluation.result &&
       !state.extractedData
     ) {
-      console.log("ExtractDiagramStep - extraction complete, status:", evaluation.status);
-      console.log("ExtractDiagramStep - result:", evaluation.result);
-
-      // Handle both ERDExtractionResult and EvaluationWorkflowResult types
-      const extractedData =
-        "entities" in evaluation.result
-          ? evaluation.result
-          : evaluation.result.extractedInformation;
-
-      console.log("ExtractDiagramStep - setting extracted data and moving to next step");
-      setExtractedData(extractedData);
-
+      if ("type" in evaluation.result) {
+        setExtractedData(evaluation.result);
+      }
       // Show success toast and automatically navigate to the next step (refine)
       toast.success("Extraction completed successfully!");
       onNext();

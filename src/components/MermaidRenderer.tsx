@@ -43,11 +43,8 @@ export const MermaidRenderer = ({
   useEffect(() => {
     const renderDiagram = async () => {
       if (!diagram) {
-        console.log("MermaidRenderer: No diagram provided");
         return;
       }
-
-      console.log("MermaidRenderer: Starting render, diagram length:", diagram.length);
 
       try {
         setRenderError(null);
@@ -56,11 +53,8 @@ export const MermaidRenderer = ({
         renderCountRef.current += 1;
         const diagramId = `mermaid-${Date.now()}-${renderCountRef.current}`;
 
-        console.log("MermaidRenderer: Rendering with ID:", diagramId);
-
         // Render the diagram
         const { svg } = await mermaid.render(diagramId, diagram);
-        console.log("MermaidRenderer: Render successful, SVG length:", svg.length);
         setSvgContent(svg);
       } catch (error) {
         console.error("Mermaid rendering error:", error);
@@ -81,19 +75,12 @@ export const MermaidRenderer = ({
 
   // Update container when SVG content changes
   useEffect(() => {
-    console.log(
-      "MermaidRenderer: Update container effect, svgContent length:",
-      svgContent.length,
-      "containerRef:",
-      !!containerRef.current,
-    );
     if (containerRef.current && svgContent) {
       containerRef.current.innerHTML = svgContent;
 
       // Make SVG responsive
       const svgElement = containerRef.current.querySelector("svg");
       if (svgElement) {
-        console.log("MermaidRenderer: SVG element found in main container");
         svgElement.style.maxWidth = "100%";
         svgElement.style.height = "auto";
       }
@@ -102,30 +89,15 @@ export const MermaidRenderer = ({
 
   // Update fullscreen container when dialog opens
   useEffect(() => {
-    console.log("MermaidRenderer: Fullscreen effect triggered", {
-      isFullscreen,
-      hasRef: !!fullscreenContainerRef.current,
-      svgContentLength: svgContent.length,
-    });
-
     if (isFullscreen && svgContent) {
       // Use setTimeout to ensure the dialog has rendered
       const timer = setTimeout(() => {
         if (fullscreenContainerRef.current) {
-          console.log(
-            "MermaidRenderer: Rendering fullscreen mermaid, svgContent length:",
-            svgContent.length,
-          );
           fullscreenContainerRef.current.innerHTML = svgContent;
 
           // Make SVG responsive
           const svgElement = fullscreenContainerRef.current.querySelector("svg");
           if (svgElement) {
-            console.log(
-              "MermaidRenderer: SVG element found in fullscreen, dimensions:",
-              svgElement.getBoundingClientRect(),
-            );
-
             // Reset any absolute positioning and make it responsive
             svgElement.style.maxWidth = "100%";
             svgElement.style.width = "100%";
@@ -136,17 +108,8 @@ export const MermaidRenderer = ({
 
             // Remove any transform that might be positioning it off-screen
             svgElement.style.transform = "none";
-
-            console.log(
-              "MermaidRenderer: SVG styled, new dimensions:",
-              svgElement.getBoundingClientRect(),
-            );
           } else {
             console.error("MermaidRenderer: SVG element not found in fullscreen container");
-            console.log(
-              "MermaidRenderer: Fullscreen container HTML:",
-              fullscreenContainerRef.current.innerHTML.substring(0, 200),
-            );
           }
         } else {
           console.error("MermaidRenderer: Fullscreen container ref is still null after timeout");
@@ -170,7 +133,6 @@ export const MermaidRenderer = ({
             size="sm"
             className="absolute top-2 right-2"
             onClick={() => {
-              console.log("MermaidRenderer: Fullscreen button clicked");
               setIsFullscreen(true);
             }}
           >

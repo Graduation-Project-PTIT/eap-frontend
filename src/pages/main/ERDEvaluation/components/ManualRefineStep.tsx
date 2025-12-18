@@ -18,7 +18,12 @@ import { useWorkflow } from "../context/WorkflowContext";
 import { ERDFormatTabs } from "@/components/erd";
 import { useSendFinishRefinementEvent } from "@/api";
 import { toast } from "@/lib/toast";
-import type { DBExtractionResult, DBEntity } from "@/api/services/evaluation-service";
+import type {
+  DBExtractionResult,
+  DBEntity,
+  ERDExtractionResult,
+} from "@/api/services/evaluation-service";
+import type { ERDEntity } from "@/components/erd/erd-diagram-view/types";
 
 interface ManualRefineStepProps {
   onNext: () => void;
@@ -30,7 +35,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Undo functionality
-  const [history, setHistory] = useState<DBExtractionResult[]>([]);
+  const [history, setHistory] = useState<DBExtractionResult[] | ERDExtractionResult[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const isUndoingRef = useRef(false);
   const lastSavedDataRef = useRef<string>("");
@@ -52,8 +57,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   });
 
   // Use extracted data from workflow state, or fallback to empty structure
-  const extractedData = state.extractedData || { entities: [], ddlScript: "", mermaidDiagram: "" };
-  const refinedData = state.refinedData || extractedData;
+  const refinedData = state.refinedData || state.extractedData;
 
   // Initialize refined data with extracted data when component mounts
   useEffect(() => {
@@ -73,6 +77,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
           const currentIndex = historyIndex;
           // Remove any future history if we're not at the end
           const newHistory = prev.slice(0, currentIndex + 1);
+          // @ts-expect-error - ERDExtractionResult is not assignable to DBExtractionResult
           newHistory.push(refinedData);
           return newHistory.slice(-50); // Keep last 50 states
         });
@@ -110,7 +115,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleUndo]);
 
-  const handleDataChange = (updatedData: DBExtractionResult) => {
+  const handleDataChange = (updatedData: DBExtractionResult | ERDExtractionResult) => {
     if (!isUndoingRef.current) {
       setRefinedData(updatedData);
     }
@@ -148,7 +153,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   };
 
   const handleAddEntity = () => {
-    const newEntity: DBEntity = {
+    const newEntity: DBEntity | ERDEntity = {
       name: "new_entity",
       attributes: [
         {
@@ -162,12 +167,24 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
       ],
     };
 
-    const updatedData = {
-      entities: [...refinedData.entities, newEntity],
-      ddlScript: refinedData.ddlScript,
-      mermaidDiagram: refinedData.mermaidDiagram,
-    };
-    setRefinedData(updatedData);
+    let newUpdatedData: DBExtractionResult | ERDExtractionResult;
+
+    if (refinedData?.type === "ERD") {
+      newUpdatedData = {
+        type: "ERD",
+        entities: [...refinedData.entities, newEntity as ERDEntity],
+        relationships: refinedData.relationships,
+      };
+    } else {
+      newUpdatedData = {
+        type: "PHYSICAL_DB",
+        entities: [...refinedData!.entities, newEntity as DBEntity],
+        ddlScript: refinedData!.ddlScript,
+        mermaidDiagram: refinedData!.mermaidDiagram,
+      };
+    }
+
+    setRefinedData(newUpdatedData);
   };
 
   const toggleFullscreen = () => {
@@ -234,7 +251,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
 
           {/* Fullscreen ERD Format Tabs */}
           <div className="flex-1 p-4">
-            {refinedData.entities.length > 0 ? (
+            {refinedData && refinedData.entities.length > 0 ? (
               <ERDFormatTabs
                 data={refinedData}
                 onDataChange={handleDataChange}
@@ -307,7 +324,7 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
       </div>
 
       {/* ERD Format Tabs */}
-      {refinedData.entities.length > 0 ? (
+      {refinedData && refinedData.entities.length > 0 ? (
         <ERDFormatTabs
           data={refinedData}
           onDataChange={handleDataChange}

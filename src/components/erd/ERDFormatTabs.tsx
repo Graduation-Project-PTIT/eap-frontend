@@ -7,12 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import ERDTableTabs from "./ERDTableTabs";
 import { MermaidRenderer } from "../MermaidRenderer";
 import Editor from "@monaco-editor/react";
-import type { DBExtractionResult } from "@/api/services/evaluation-service";
+import type { DBExtractionResult, ERDExtractionResult } from "@/api/services/evaluation-service";
 import type { PreferredFormat } from "@/pages/main/ERDEvaluation/context/WorkflowContext";
 
 interface ERDFormatTabsProps {
-  data: DBExtractionResult;
-  onDataChange?: (data: DBExtractionResult) => void;
+  data: DBExtractionResult | ERDExtractionResult;
+  onDataChange?: (data: DBExtractionResult | ERDExtractionResult) => void;
   isEditable?: boolean;
   className?: string;
   preferredFormat?: PreferredFormat;
@@ -104,7 +104,7 @@ const ERDFormatTabs: React.FC<ERDFormatTabsProps> = ({
               </AlertDescription>
             </Alert>
           )}
-          {data.ddlScript ? (
+          {data.type === "PHYSICAL_DB" && data.ddlScript ? (
             <div className="border rounded-lg overflow-hidden" style={{ height: "500px" }}>
               <Editor
                 height="500px"
@@ -144,7 +144,7 @@ const ERDFormatTabs: React.FC<ERDFormatTabsProps> = ({
               </AlertDescription>
             </Alert>
           )}
-          {data.mermaidDiagram ? (
+          {data.type === "PHYSICAL_DB" && data.mermaidDiagram ? (
             <div className="grid grid-cols-2 gap-4" style={{ height: "500px" }}>
               {/* Mermaid Code */}
               <div className="border rounded-lg overflow-hidden flex flex-col">

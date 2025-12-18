@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { aiServiceClient } from "../client";
 import { queryKeys } from "../query-client";
+import type { ERDEntity, ERDRelationship } from "@/components/erd/erd-diagram-view/types";
 
 export interface DBEntity {
   name: string;
@@ -20,14 +21,27 @@ export interface DBAttribute {
 }
 
 export interface DBExtractionResult {
+  type: "PHYSICAL_DB";
   entities: DBEntity[];
   ddlScript: string;
   mermaidDiagram: string;
 }
 
+export interface ERDExtractionResult {
+  type: "ERD";
+  entities: ERDEntity[];
+  relationships: ERDRelationship[];
+}
+
 export interface EvaluationWorkflowResult {
-  extractedInformation: DBExtractionResult;
-  evaluationReport: string;
+  erdEvaluationStep?: {
+    score: number;
+    evaluationReport: string;
+  };
+  dbEvaluationStep?: {
+    score: number;
+    evaluationReport: string;
+  };
 }
 
 export interface EvaluationRequest {
@@ -44,7 +58,8 @@ export interface EvaluationRecord {
   userId: string;
   questionDescription: string;
   fileKey: string;
-  extractedInformation?: DBExtractionResult;
+  extractedInformation?: DBExtractionResult | ERDExtractionResult;
+  diagramType?: "ERD" | "PHYSICAL_DB";
   score?: number;
   evaluationReport?: string;
   workflowRunId: string;
@@ -58,7 +73,7 @@ export interface EvaluationRecord {
 export interface EvaluationWorkflowResponse {
   id: string;
   status: "pending" | "running" | "completed" | "failed" | "waiting";
-  result?: DBExtractionResult | EvaluationWorkflowResult;
+  result?: DBExtractionResult | ERDExtractionResult | EvaluationWorkflowResult;
   error?: string;
   createdAt: string;
   updatedAt: string;
@@ -89,16 +104,22 @@ export interface MastraWorkflowResponse {
 
 // Helper function to convert EvaluationRecord to EvaluationWorkflowResponse
 function toWorkflowResponse(record: EvaluationRecord): EvaluationWorkflowResponse {
-  let result: DBExtractionResult | EvaluationWorkflowResult | undefined;
+  let result: DBExtractionResult | ERDExtractionResult | EvaluationWorkflowResult | undefined;
 
-  // Build result object based on available data
-  if (record.extractedInformation && record.evaluationReport) {
+  if (record.diagramType === "ERD" && record.evaluationReport) {
     result = {
-      extractedInformation: record.extractedInformation,
-      evaluationReport: record.evaluationReport,
+      erdEvaluationStep: {
+        score: record.score || 0,
+        evaluationReport: record.evaluationReport,
+      },
     };
-  } else if (record.extractedInformation) {
-    result = record.extractedInformation;
+  } else if (record.diagramType === "PHYSICAL_DB" && record.evaluationReport) {
+    result = {
+      dbEvaluationStep: {
+        score: record.score || 0,
+        evaluationReport: record.evaluationReport,
+      },
+    };
   }
 
   return {
@@ -169,7 +190,6 @@ export const evaluationApi = {
   getEvaluationResult: async (id: string): Promise<EvaluationWorkflowResponse> => {
     console.log("getEvaluationResult - fetching workflow result for evaluation:", id);
 
-    // Note: baseURL already includes /ai, so we use /evaluations/${id}/result as the path
     const response = await aiServiceClient.get<MastraWorkflowResponse>(`/evaluations/${id}/result`);
 
     console.log("getEvaluationResult - received workflow response:", response.data);
@@ -192,7 +212,7 @@ export const evaluationApi = {
       // When workflow is waiting, check if we have extraction results in steps
       if (data.steps && typeof data.steps === "object") {
         const steps = data.steps as Record<string, { status: string; output?: DBExtractionResult }>;
-        const extractStep = steps["erdInformationExtractStep"];
+        const extractStep = steps["erdInformationExtractStep"] || steps["dbInformationExtractStep"];
         if (extractStep && extractStep.status === "success" && extractStep.output) {
           result = extractStep.output;
         }
@@ -213,7 +233,6 @@ export const evaluationApi = {
   getEvaluations: async (params: EvaluationListParams = {}): Promise<EvaluationRecord[]> => {
     console.log("getEvaluations - fetching evaluations with params:", params);
 
-    // Note: baseURL already includes /ai, so we use /evaluations as the path
     const response = await aiServiceClient.get<EvaluationRecord[]>("/evaluations", { params });
 
     console.log("getEvaluations - received records:", response.data.length);
@@ -224,11 +243,10 @@ export const evaluationApi = {
   // Send finish-refinement event to workflow
   sendFinishRefinementEvent: async (
     id: string,
-    extractedInformation: DBExtractionResult,
+    extractedInformation: DBExtractionResult | ERDExtractionResult,
   ): Promise<{ success: boolean }> => {
     console.log("sendFinishRefinementEvent - sending event for evaluation:", id);
 
-    // Note: baseURL already includes /ai, so we use /evaluations/${id}/finish-refinement as the path
     const response = await aiServiceClient.post(`/evaluations/${id}/finish-refinement`, {
       event: "finish-refinement",
       data: { extractedInformation },
@@ -374,70 +392,54 @@ export const useEvaluation = (id: string, enabled = true) => {
     queryKey: queryKeys.evaluations.detail(id),
     queryFn: async () => {
       try {
-        // First try to get the execution result from workflow
         return await evaluationApi.getEvaluationResult(id);
       } catch {
-        // If execution result is not available, fall back to database record
         return await evaluationApi.getEvaluation(id);
       }
     },
     enabled: enabled && !!id,
     refetchInterval: (query) => {
-      // Only poll if we have data and it's still processing
       const data = query.state.data;
-      console.log("useEvaluation - polling check, data:", data);
 
       if (data) {
-        // Continue polling if status is pending or running
         if (data.status === "pending" || data.status === "running") {
-          console.log("useEvaluation - continuing poll (status:", data.status, ")");
-          return 2000; // 2 seconds
+          return 2000;
         }
 
         // For waiting status, check if we have extraction result
         if (data.status === "waiting") {
           if (data.result && typeof data.result === "object" && "entities" in data.result) {
-            // We have extraction result, stop polling
-            console.log("useEvaluation - stopping poll (waiting with extraction result)");
             return false;
           } else {
-            // Still waiting for extraction, keep polling
-            console.log("useEvaluation - continuing poll (waiting without result)");
             return 2000;
           }
         }
 
         // If status is completed, check if we have evaluation report
         if (data.status === "completed") {
-          console.log("useEvaluation - status is completed, checking result:", data.result);
+          if (
+            data.result &&
+            ("erdEvaluationStep" in data.result || "dbEvaluationStep" in data.result)
+          ) {
+            const workflowResult = data.result as EvaluationWorkflowResult;
 
-          if (data.result) {
-            const hasEvaluationReport =
-              typeof data.result === "object" &&
-              data.result !== null &&
-              "evaluationReport" in data.result;
-
-            console.log("useEvaluation - hasEvaluationReport:", hasEvaluationReport);
-
-            if (hasEvaluationReport) {
-              console.log("useEvaluation - stopping poll (completed with evaluation report)");
-              return false; // Stop polling - we have the evaluation report
+            if (
+              workflowResult.erdEvaluationStep?.evaluationReport ||
+              workflowResult.dbEvaluationStep?.evaluationReport
+            ) {
+              return false;
             } else {
-              console.log("useEvaluation - continuing poll (completed but no evaluation report)");
-              return 2000; // Keep polling for evaluation report
+              return 2000;
             }
           } else {
-            console.log("useEvaluation - continuing poll (completed but no result)");
-            return 2000; // Keep polling for result
+            return 2000;
           }
         }
       }
-
-      console.log("useEvaluation - stopping poll");
-      return false; // Stop polling when completed with results, failed, or no data
+      return false;
     },
-    staleTime: 0, // Always consider data stale to allow polling
-    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
     retry: (failureCount, error) => {
       // Don't retry if it's a 404 (run not found)
       if (error && typeof error === "object" && "response" in error) {
@@ -470,7 +472,7 @@ export const useSendFinishRefinementEvent = ({
       extractedInformation,
     }: {
       id: string;
-      extractedInformation: DBExtractionResult;
+      extractedInformation: DBExtractionResult | ERDExtractionResult;
     }) => evaluationApi.sendFinishRefinementEvent(id, extractedInformation),
     onSuccess: (_, { id }) => {
       // Invalidate the specific evaluation to refresh its status

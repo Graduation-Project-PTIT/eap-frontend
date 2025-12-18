@@ -39,7 +39,6 @@ const ConversationList = ({ currentConversationId }: ConversationListProps) => {
   const handleDeleteConfirm = async () => {
     if (deleteConversationId) {
       // TODO: Implement delete API
-      console.log("Delete conversation:", deleteConversationId);
       setDeleteConversationId(null);
     }
   };

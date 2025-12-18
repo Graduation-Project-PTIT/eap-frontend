@@ -80,7 +80,6 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
   const uploadFile = useUploadFile();
   const startEvaluation = useStartEvaluation({
     onSuccess: (data) => {
-      console.log("SetupStep - startEvaluation onSuccess", data);
       // Set the actual evaluation ID from the response
       setEvaluationId(data.id);
       setLoading(false);
