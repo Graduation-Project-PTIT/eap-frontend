@@ -6,6 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 
 // Service paths - these match the nginx routing configuration
 export const SERVICE_PATHS = {
+  USER: "/user",
   FILE: "/files",
   AI: "/ai",
   CLASS_SERVICE: "/class-service",
@@ -122,6 +123,7 @@ export const createServiceClient = (
 };
 
 // Export service-specific clients
+export const userServiceClient = createServiceClient(SERVICE_PATHS.USER);
 export const fileServiceClient = createServiceClient(SERVICE_PATHS.FILE);
 export const aiServiceClient = createServiceClient(SERVICE_PATHS.AI);
 export const classServiceClient = createServiceClient(SERVICE_PATHS.CLASS_SERVICE, true);

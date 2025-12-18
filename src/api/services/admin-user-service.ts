@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../query-client";
-import { apiClient } from "@/api";
+import { userServiceClient } from "@/api";
 
 // Types
 export interface AdminUser {
@@ -66,7 +66,7 @@ export interface AdminUserResponse {
 
 // API Functions
 export const adminUserApi = {
-  // Get all users (paginated) - GET /api/admin/user/all
+  // Get all users (paginated) - GET /api/user/admin/all
   getAllUsers: async (filters?: AdminUserFilters): Promise<AdminUserListResponse["data"]> => {
     const params = {
       page: filters?.page ?? 0,
@@ -74,38 +74,42 @@ export const adminUserApi = {
       orderBy: filters?.orderBy ?? "email",
       order: filters?.order ?? "asc",
     };
-    const response = await apiClient.get<AdminUserListResponse>("/admin/user/all", { params });
+    const response = await userServiceClient.get<AdminUserListResponse>("/admin/all", { params });
     return response.data.data;
   },
 
-  // Get user by ID - GET /admin/user/{userId}
+  // Get user by ID - GET /api/user/admin/{userId}
   getUserById: async (userId: string): Promise<AdminUser> => {
-    const response = await apiClient.get<AdminUserResponse>(`/admin/user/${userId}`);
+    const response = await userServiceClient.get<AdminUserResponse>(`/admin/${userId}`);
     return response.data.data;
   },
 
-  // Create user - POST /admin/user
+  // Create user - POST /api/user/admin
   createUser: async (data: CreateAdminUserRequest): Promise<AdminUser> => {
-    const response = await apiClient.post<AdminUserResponse>("/admin/user", data);
+    const response = await userServiceClient.post<AdminUserResponse>("/admin", data);
     return response.data.data;
   },
 
-  // Update user - PUT /admin/user
+  // Update user - PUT /api/user/admin
   updateUser: async (data: UpdateAdminUserRequest): Promise<AdminUser> => {
-    const response = await apiClient.put<AdminUserResponse>("/admin/user", data);
+    const response = await userServiceClient.put<AdminUserResponse>("/admin", data);
     return response.data.data;
   },
 
-  // Delete user - DELETE /admin/user/{userId}
+  // Delete user - DELETE /api/user/admin/{userId}
   deleteUser: async (userId: string): Promise<void> => {
-    await apiClient.delete(`/admin/user/${userId}`);
+    await userServiceClient.delete(`/admin/${userId}`);
   },
 
-  // Assign role - PATCH /admin/user/{userId}/role
+  // Assign role - PATCH /api/user/admin/{userId}/role
   assignRole: async (userId: string, role: string): Promise<AdminUser> => {
-    const response = await apiClient.patch<AdminUserResponse>(`/admin/user/${userId}/role`, null, {
-      params: { role },
-    });
+    const response = await userServiceClient.patch<AdminUserResponse>(
+      `/admin/${userId}/role`,
+      null,
+      {
+        params: { role },
+      },
+    );
     return response.data.data;
   },
 };

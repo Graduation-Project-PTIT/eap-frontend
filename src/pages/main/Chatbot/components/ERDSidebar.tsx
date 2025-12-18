@@ -54,7 +54,7 @@ const ERDSidebar = ({
   const handleShare = async (formData: {
     title: string;
     description: string;
-    visibility: "public" | "private" | "class";
+    visibility: "Public" | "Private" | "Class";
     classId?: string;
   }) => {
     if (!schema || !ddl) {

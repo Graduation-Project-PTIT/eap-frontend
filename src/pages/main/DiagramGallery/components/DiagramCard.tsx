@@ -18,11 +18,11 @@ const DiagramCard = ({ diagram }: DiagramCardProps) => {
 
   const getVisibilityColor = (visibility: string) => {
     switch (visibility) {
-      case "public":
+      case "Public":
         return "bg-green-500/10 text-green-500 hover:bg-green-500/20";
-      case "private":
+      case "Private":
         return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
-      case "class":
+      case "Class":
         return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20";
       default:
         return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
@@ -33,10 +33,15 @@ const DiagramCard = ({ diagram }: DiagramCardProps) => {
     <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleClick}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg line-clamp-2">{diagram.title}</h3>
-          <Badge className={getVisibilityColor(diagram.visibility)} variant="secondary">
-            {diagram.visibility}
-          </Badge>
+          <h3 className="font-semibold text-lg line-clamp-2 flex-1">{diagram.title}</h3>
+          <div className="flex items-center gap-2 shrink-0">
+            {diagram.isVerified && (
+              <Badge className="bg-green-500/10 text-green-500 text-xs">✓ Verified</Badge>
+            )}
+            <Badge className={getVisibilityColor(diagram.visibility)} variant="secondary">
+              {diagram.visibility}
+            </Badge>
+          </div>
         </div>
         {diagram.domain && (
           <Badge variant="outline" className="w-fit mt-2">
@@ -58,18 +63,23 @@ const DiagramCard = ({ diagram }: DiagramCardProps) => {
 
       <CardFooter className="flex items-center justify-between pt-3 border-t">
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Eye className="h-4 w-4" />
-            <span>{diagram.viewCount}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <ThumbsUp className="h-4 w-4" />
-            <span>{diagram.upvoteCount}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <ThumbsDown className="h-4 w-4" />
-            <span>{diagram.downvoteCount}</span>
-          </div>
+          {/* Hide view count and votes for private diagrams */}
+          {diagram.visibility !== "Private" && (
+            <>
+              <div className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                <span>{diagram.viewCount}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ThumbsUp className="h-4 w-4" />
+                <span>{diagram.upvoteCount}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ThumbsDown className="h-4 w-4" />
+                <span>{diagram.downvoteCount}</span>
+              </div>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Calendar className="h-3 w-3" />
