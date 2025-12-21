@@ -7,7 +7,7 @@ import {
   useConversation,
   useUpdateConversationSchema,
 } from "@/api/services/chat-service";
-import type { ChatMessage } from "@/api/services/chat-service";
+import type { ChatMessage, ERDSchema, DiagramType } from "@/api/services/chat-service";
 import { useSchemaState } from "./hooks/useSchemaState";
 import { toast } from "@/lib/toast";
 import WelcomeView from "./components/WelcomeView";
@@ -36,6 +36,8 @@ const Chatbot = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showHistory, setShowHistory] = useState(true); // Show history sidebar by default
   const [currentDdl, setCurrentDdl] = useState<string | null>(null);
+  const [currentErdSchema, setCurrentErdSchema] = useState<ERDSchema | null>(null);
+  const [diagramType, setDiagramType] = useState<DiagramType | undefined>(undefined);
   const [enableSearch, setEnableSearch] = useState(true); // Enable web search by default
 
   // API hooks
@@ -61,6 +63,8 @@ const Chatbot = () => {
       setInputValue("");
       setError(null);
       setCurrentDdl(null);
+      setCurrentErdSchema(null);
+      setDiagramType(undefined);
       setShowSidebar(false);
     } else {
       // Update local ID to match route
@@ -79,18 +83,18 @@ const Chatbot = () => {
           content: msg.content,
           timestamp: new Date(msg.timestamp),
           schema: msg.schema,
+          erdSchema: msg.erdSchema,
           ddl: msg.ddl,
           runId: msg.runId,
+          diagramType: msg.diagramType,
         }));
         setMessages(loadedMessages);
       }
 
       // Load DDL - prioritize currentDdl from conversation, fallback to latest message
       if (conversationData.currentDdl) {
-        // Use DDL from conversation (most up-to-date after schema updates)
         setCurrentDdl(conversationData.currentDdl);
       } else if (conversationData.messages) {
-        // Fallback: Find the latest DDL from messages
         const lastMessageWithDdl = conversationData.messages
           ?.slice()
           .reverse()
@@ -98,6 +102,16 @@ const Chatbot = () => {
         if (lastMessageWithDdl?.ddl) {
           setCurrentDdl(lastMessageWithDdl.ddl);
         }
+      }
+
+      // Load ERD Schema
+      if (conversationData.erdSchema) {
+        setCurrentErdSchema(conversationData.erdSchema);
+      }
+
+      // Load diagram type
+      if (conversationData.diagramType) {
+        setDiagramType(conversationData.diagramType);
       }
     }
   }, [conversationData]);
@@ -153,11 +167,23 @@ const Chatbot = () => {
       const assistantMessage = createAssistantMessage(response);
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Update current DDL (only if not blocked)
-      if (!response.blocked && response.schema && response.schema.entities.length > 0) {
-        setCurrentDdl(response.ddl);
+      // Update schemas based on response (only if not blocked)
+      if (!response.blocked) {
+        // Update Physical DB schema and DDL
+        if (response.schema && response.schema.entities.length > 0) {
+          setCurrentDdl(response.ddl);
+        }
+
+        // Update ERD schema
+        if (response.erdSchema) {
+          setCurrentErdSchema(response.erdSchema);
+        }
+
+        // Update diagram type
+        if (response.diagramType) {
+          setDiagramType(response.diagramType);
+        }
       }
-      // Note: If blocked, the assistant message with the explanation is already added above
     } catch (err) {
       console.error("Chat error:", err);
       setError("Something went wrong. Please try again.");
@@ -203,10 +229,10 @@ const Chatbot = () => {
               </Button>
             </div>
 
-            {currentSchema && (
+            {(currentSchema || currentErdSchema) && (
               <Button variant="outline" size="sm" onClick={() => setShowSidebar(true)}>
                 <PanelRightOpen className="h-4 w-4 mr-2" />
-                View Schema
+                View {diagramType === "ERD" ? "ERD" : "Schema"}
               </Button>
             )}
           </div>
@@ -242,6 +268,7 @@ const Chatbot = () => {
         {/* ERD Sidebar - Slides from right */}
         <ERDSidebar
           schema={currentSchema}
+          erdSchema={currentErdSchema}
           ddl={currentDdl}
           isOpen={showSidebar}
           onToggle={() => setShowSidebar(!showSidebar)}
@@ -249,6 +276,7 @@ const Chatbot = () => {
           onSaveSchema={handleSaveSchema}
           isSchemaDirty={isSchemaDirty}
           isSaving={updateConversationSchema.isPending}
+          diagramType={diagramType}
         />
       </div>
     </div>

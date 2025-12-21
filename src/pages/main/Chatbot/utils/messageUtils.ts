@@ -18,12 +18,16 @@ export const createAssistantMessage = (response: ChatResponse): ChatMessage => {
     content: response.response,
     timestamp: new Date(),
     schema: response.schema,
+    erdSchema: response.erdSchema || undefined,
     ddl: response.ddl,
     runId: response.runId,
+    diagramType: response.diagramType,
   };
 };
 
-// Check if a message has schema data
+// Check if a message has schema data (Physical DB or ERD)
 export const hasSchema = (message: ChatMessage): boolean => {
-  return !!message.schema && message.schema.entities.length > 0;
+  const hasPhysicalSchema = !!message.schema && message.schema.entities.length > 0;
+  const hasErdSchema = !!message.erdSchema && message.erdSchema.entities.length > 0;
+  return hasPhysicalSchema || hasErdSchema;
 };

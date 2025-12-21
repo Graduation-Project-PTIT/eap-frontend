@@ -1,17 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../query-client";
 import type { DBEntity } from "./evaluation-service";
+import type { ERDEntity, ERDRelationship } from "@/components/erd/erd-diagram-view/types";
 import { aiServiceClient } from "@/api";
 
 // Types and Interfaces
+
+// ERD Schema type for Chen notation diagrams
+export interface ERDSchema {
+  entities: ERDEntity[];
+  relationships: ERDRelationship[];
+}
+
+// Diagram type enum
+export type DiagramType = "ERD" | "PHYSICAL_DB";
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  schema?: { entities: DBEntity[] };
+  schema?: { entities: DBEntity[] }; // Physical DB schema
+  erdSchema?: ERDSchema; // ERD schema (Chen notation)
   ddl?: string;
   runId?: string;
+  diagramType?: DiagramType;
 }
 
 export interface ChatRequest {
@@ -24,10 +37,12 @@ export interface ChatResponse {
   success: boolean;
   conversationId: string;
   response: string;
-  schema: { entities: DBEntity[] };
+  schema: { entities: DBEntity[] }; // Physical DB schema
+  erdSchema?: ERDSchema | null; // ERD schema (Chen notation)
   ddl: string;
   runId: string;
   blocked?: boolean; // Flag indicating if schema creation was blocked
+  diagramType?: DiagramType; // Current diagram type
 }
 
 export interface Conversation {
@@ -37,6 +52,7 @@ export interface Conversation {
   createdAt: string;
   lastMessageAt: string | null;
   updatedAt: string;
+  diagramType?: DiagramType;
 }
 
 export interface ConversationListResponse {
@@ -50,7 +66,9 @@ export interface ConversationHistory {
   conversationId: string;
   exists: boolean;
   schema: { entities: DBEntity[] } | null;
-  currentDdl?: string | null; // Current DDL script from conversation
+  erdSchema?: ERDSchema | null;
+  currentDdl?: string | null;
+  diagramType?: DiagramType;
   thread: {
     title: string;
     createdAt: string;
@@ -62,9 +80,11 @@ export interface ConversationHistory {
     content: string;
     timestamp: string;
     schema?: { entities: DBEntity[] };
+    erdSchema?: ERDSchema;
     ddl?: string;
     runId?: string;
     intent?: string;
+    diagramType?: DiagramType;
   }>;
 }
 

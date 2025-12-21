@@ -3,19 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Share2, Save, Loader2 } from "lucide-react";
+import { X, Share2, Save, Loader2, Network, Database, FileCode } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import type { DBEntity } from "@/api/services/evaluation-service";
-import ERDDiagram from "@/components/erd/db-diagram-view";
+import type { ERDSchema, DiagramType } from "@/api/services/chat-service";
+import DBDiagram from "@/components/erd/db-diagram-view";
+import ERDDiagram from "@/components/erd/erd-diagram-view";
 import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
 import { getEdgesForDBDiagram } from "@/components/erd/db-diagram-view/utils/getEdgesForDBDiagram";
 import getLayoutedElementsForDBDiagram from "@/components/erd/db-diagram-view/utils/getLayoutedElementsForDBDiagram";
+import { layoutChenNotation } from "@/components/erd/erd-diagram-view/utils/layoutChenNotation";
 import ShareDiagramDialog from "./ShareDiagramDialog";
 import { useCreateDiagram } from "@/api/services/diagram-service";
 import { toast } from "@/lib/toast";
 
 interface ERDSidebarProps {
-  schema: { entities: DBEntity[] } | null;
+  schema: { entities: DBEntity[] } | null; // Physical DB schema
+  erdSchema?: ERDSchema | null; // ERD schema (Chen notation)
   ddl: string | null;
   isOpen: boolean;
   onToggle: () => void;
@@ -23,10 +27,12 @@ interface ERDSidebarProps {
   onSaveSchema?: () => void;
   isSchemaDirty?: boolean;
   isSaving?: boolean;
+  diagramType?: DiagramType;
 }
 
 const ERDSidebar = ({
   schema,
+  erdSchema,
   ddl,
   isOpen,
   onToggle,
@@ -34,22 +40,40 @@ const ERDSidebar = ({
   onSaveSchema,
   isSchemaDirty = false,
   isSaving = false,
+  diagramType,
 }: ERDSidebarProps) => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const createDiagram = useCreateDiagram();
 
-  // Generate diagram nodes and edges
-  const { nodes, edges } = useMemo(() => {
+  // Generate Physical DB diagram nodes and edges
+  const { dbNodes, dbEdges } = useMemo(() => {
     if (!schema || !schema.entities || schema.entities.length === 0) {
-      return { nodes: [], edges: [] };
+      return { dbNodes: [], dbEdges: [] };
     }
 
     const initialNodes = getNodesForDBDiagram(schema.entities);
     const initialEdges = getEdgesForDBDiagram(initialNodes);
     const layouted = getLayoutedElementsForDBDiagram(initialNodes, initialEdges);
 
-    return layouted;
+    return { dbNodes: layouted.nodes, dbEdges: layouted.edges };
   }, [schema]);
+
+  // Generate ERD (Chen notation) diagram nodes and edges
+  const { erdNodes, erdEdges } = useMemo(() => {
+    if (!erdSchema || !erdSchema.entities || erdSchema.entities.length === 0) {
+      return { erdNodes: [], erdEdges: [] };
+    }
+
+    const layouted = layoutChenNotation(erdSchema.entities, erdSchema.relationships || [], {
+      useDagreLayout: true,
+      direction: "LR",
+      attributeRadius: 180,
+      nodeSeparation: 0,
+      rankSeparation: 50,
+    });
+
+    return { erdNodes: layouted.nodes, erdEdges: layouted.edges };
+  }, [erdSchema]);
 
   const handleShare = async (formData: {
     title: string;
@@ -80,15 +104,43 @@ const ERDSidebar = ({
 
   if (!isOpen) return null;
 
-  const hasSchema = schema && schema.entities && schema.entities.length > 0;
+  const hasPhysicalSchema = schema && schema.entities && schema.entities.length > 0;
+  const hasErdSchema = erdSchema && erdSchema.entities && erdSchema.entities.length > 0;
+  const hasAnySchema = hasPhysicalSchema || hasErdSchema;
+
+  // Determine header title based on diagram type
+  const headerTitle =
+    diagramType === "ERD"
+      ? "ERD Diagram"
+      : diagramType === "PHYSICAL_DB"
+        ? "Physical Database"
+        : "Diagram";
+  const headerSubtitle =
+    diagramType === "ERD"
+      ? "Conceptual ERD"
+      : diagramType === "PHYSICAL_DB"
+        ? "Physical database schema and DDL"
+        : "Generated diagram";
+
+  // Determine default tab based on what's available
+  const defaultTab =
+    hasErdSchema && !hasPhysicalSchema ? "erd" : hasPhysicalSchema ? "physical" : "erd";
+
+  // Count available tabs
+  const tabCount = (hasErdSchema ? 1 : 0) + (hasPhysicalSchema ? 1 : 0) + (ddl ? 1 : 0);
 
   return (
-    <div className="fixed right-0 top-0 h-screen w-[70vw] max-w-[70vw] bg-background border-l shadow-lg z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed right-0 top-0 h-screen w-[90vw] max-w-[90vw] bg-background border-l shadow-lg z-50 flex flex-col animate-in slide-in-from-right duration-300">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">ERD Diagram</h2>
+            <h2 className="text-lg font-semibold">{headerTitle}</h2>
+            {diagramType && (
+              <Badge variant="outline" className="text-xs">
+                {diagramType === "ERD" ? "ERD" : "Physical"}
+              </Badge>
+            )}
             {isSchemaDirty && (
               <Badge
                 variant="secondary"
@@ -98,7 +150,7 @@ const ERDSidebar = ({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Generated ERD diagram and DDL</p>
+          <p className="text-sm text-muted-foreground mt-1">{headerSubtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Save button */}
@@ -118,7 +170,7 @@ const ERDSidebar = ({
             </Button>
           )}
 
-          {hasSchema && (
+          {hasAnySchema && (
             <Button variant="outline" size="sm" onClick={() => setIsShareDialogOpen(true)}>
               <Share2 className="h-4 w-4 mr-2" />
               Share
@@ -132,27 +184,54 @@ const ERDSidebar = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {hasSchema ? (
-          <Tabs defaultValue="diagram" className="w-full h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="diagram">Diagram</TabsTrigger>
-              <TabsTrigger value="ddl">DDL Script</TabsTrigger>
+        {hasAnySchema ? (
+          <Tabs defaultValue={defaultTab} className="w-full h-full flex flex-col">
+            <TabsList className={`grid w-full max-w-lg grid-cols-${Math.max(tabCount, 2)}`}>
+              {hasErdSchema && (
+                <TabsTrigger value="erd" className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  ERD
+                </TabsTrigger>
+              )}
+              {hasPhysicalSchema && (
+                <TabsTrigger value="physical" className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Physical DB
+                </TabsTrigger>
+              )}
+              {ddl && (
+                <TabsTrigger value="ddl" className="flex items-center gap-2">
+                  <FileCode className="h-4 w-4" />
+                  DDL Script
+                </TabsTrigger>
+              )}
             </TabsList>
 
-            {/* Diagram Tab */}
-            <TabsContent value="diagram" className="flex-1 mt-4">
-              <Card className="h-[calc(100vh-200px)] overflow-hidden">
-                <ERDDiagram
-                  initialNodes={nodes}
-                  initialEdges={edges}
-                  onEntityUpdate={onEntityUpdate}
-                />
-              </Card>
-            </TabsContent>
+            {/* ERD (Chen Notation) Tab */}
+            {hasErdSchema && (
+              <TabsContent value="erd" className="flex-1 mt-4">
+                <Card className="h-[calc(100vh-200px)] overflow-hidden">
+                  <ERDDiagram initialNodes={erdNodes} initialEdges={erdEdges} />
+                </Card>
+              </TabsContent>
+            )}
+
+            {/* Physical DB Diagram Tab */}
+            {hasPhysicalSchema && (
+              <TabsContent value="physical" className="flex-1 mt-4">
+                <Card className="h-[calc(100vh-200px)] overflow-hidden">
+                  <DBDiagram
+                    initialNodes={dbNodes}
+                    initialEdges={dbEdges}
+                    onEntityUpdate={onEntityUpdate}
+                  />
+                </Card>
+              </TabsContent>
+            )}
 
             {/* DDL Script Tab */}
-            <TabsContent value="ddl" className="flex-1 mt-4">
-              {ddl ? (
+            {ddl && (
+              <TabsContent value="ddl" className="flex-1 mt-4">
                 <Card className="overflow-hidden h-[calc(100vh-200px)]">
                   <Editor
                     height="100%"
@@ -173,12 +252,8 @@ const ERDSidebar = ({
                     theme="vs-dark"
                   />
                 </Card>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>No DDL script available</p>
-                </div>
-              )}
-            </TabsContent>
+              </TabsContent>
+            )}
           </Tabs>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
