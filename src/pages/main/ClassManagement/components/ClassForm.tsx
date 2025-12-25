@@ -31,7 +31,7 @@ const classFormSchema = z.object({
     .string()
     .min(1, "Code is required")
     .max(50, "Code must be less than 50 characters")
-    .regex(/^[a-zA-Z_]+$/, "Code must only contain letters and underscores"),
+    .regex(/^[a-zA-Z0-9_]+$/, "Code must only contain letters and underscores"),
   name: z.string().min(1, "Name is required").max(255, "Name must be less than 255 characters"),
   isActive: z.boolean(),
 });
