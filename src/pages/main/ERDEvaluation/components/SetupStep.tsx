@@ -22,18 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import {
-  Upload,
-  X,
-  Image as ImageIcon,
-  Loader2,
-  Zap,
-  GitBranch,
-  Languages,
-  FileJson,
-  Database,
-  Network,
-} from "lucide-react";
+import { Upload, X, Image as ImageIcon, Loader2, Zap, GitBranch, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setupStepSchema } from "../constants/schemas";
 import { useWorkflow } from "../context/WorkflowContext";
@@ -72,9 +61,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
     state.workflowMode || "standard",
   );
 
-  const [preferredFormat, setPreferredFormatState] = useState<PreferredFormat>(
-    state.preferredFormat || "json",
-  );
+  const [preferredFormat] = useState<PreferredFormat>(state.preferredFormat || "json");
 
   // API hooks
   const uploadFile = useUploadFile();
@@ -310,78 +297,6 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       Select the language for your evaluation report.
-                    </p>
-                  </div>
-
-                  {/* Evaluation Format */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none">Evaluation Format</label>
-                    <TooltipProvider>
-                      <div className="flex items-center gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant={preferredFormat === "json" ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setPreferredFormatState("json")}
-                              className="gap-2 flex-1"
-                            >
-                              <FileJson className="h-4 w-4" />
-                              JSON
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">
-                              Structured data format. Best for detailed entity and attribute
-                              analysis.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant={preferredFormat === "ddl" ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setPreferredFormatState("ddl")}
-                              className="gap-2 flex-1"
-                            >
-                              <Database className="h-4 w-4" />
-                              DDL
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">
-                              PostgreSQL script format. Best for SQL-focused evaluation and database
-                              implementation.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant={preferredFormat === "mermaid" ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setPreferredFormatState("mermaid")}
-                              className="gap-2 flex-1"
-                            >
-                              <Network className="h-4 w-4" />
-                              Mermaid
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">
-                              Diagram syntax format. Best for visual relationship analysis and ERD
-                              structure.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TooltipProvider>
-                    <p className="text-xs text-muted-foreground">
-                      Choose which format to send to the evaluation agent.
                     </p>
                   </div>
                 </div>
