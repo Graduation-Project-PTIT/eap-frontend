@@ -35,12 +35,6 @@ const sidebarSettings: SidebarItem[] = [
     group: "User",
   },
   {
-    title: "ERD Designer",
-    url: ROUTES.ERD_DESIGNER,
-    icon: Layers,
-    group: "User",
-  },
-  {
     title: "Mass Evaluation",
     url: ROUTES.MASS_EVALUATION.ROOT,
     icon: Layers,
