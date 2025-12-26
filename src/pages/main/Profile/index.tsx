@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useMyProfile, useUpdateProfile } from "@/api/services/user-service";
-import { ProfileHeader } from "./components/ProfileHeader";
-import { ProfileView } from "./components/ProfileView";
+import { ProfileCard } from "./components/ProfileCard";
 import { ProfileEditForm } from "./components/ProfileEditForm";
 import type { UpdateUserRequest } from "./types";
 import { toast } from "@/lib/toast";
@@ -63,13 +62,22 @@ const Profile = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground">Manage your profile information</p>
-      </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
+          <p className="text-muted-foreground">Manage your profile information</p>
+        </div>
 
-      {/* Profile Header with Avatar */}
-      <ProfileHeader user={user} isEditing={isEditing} onEditToggle={handleEditToggle} />
+        {/* Edit Button - Top Right */}
+        {!isEditing && (
+          <button
+            onClick={handleEditToggle}
+            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            Edit Profile
+          </button>
+        )}
+      </div>
 
       {/* Profile Content */}
       {isEditing ? (
@@ -80,7 +88,7 @@ const Profile = () => {
           isSaving={updateProfileMutation.isPending}
         />
       ) : (
-        <ProfileView user={user} />
+        <ProfileCard user={user} />
       )}
     </div>
   );
