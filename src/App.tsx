@@ -1,25 +1,25 @@
 import { useRoutes, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { configureAmplify } from "./lib/amplify.ts";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import router from "./router.tsx";
 import useAuth from "./hooks/use-auth.ts";
 import ROUTES from "./constants/routes.ts";
 
 const App = () => {
-  const [isConfigured, setIsConfigured] = useState(false);
   const routes = useRoutes(router);
 
   const { user, isLoading: isFetchingUser } = useAuth();
   const { pathname } = useLocation();
   const isOnAuthRoute = pathname.startsWith(ROUTES.AUTH.ROOT);
+  const isOnCallbackRoute = pathname === ROUTES.AUTH.CALLBACK;
 
   useEffect(() => {
     configureAmplify();
-    setIsConfigured(true);
   }, []);
 
-  if (!isConfigured || isFetchingUser) {
+  if (isFetchingUser) {
+    console.log("Loading user...");
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -29,10 +29,13 @@ const App = () => {
   }
 
   if (!user && !isOnAuthRoute && !isFetchingUser) {
+    console.log("Redirecting to sign in...");
     return <Navigate to={ROUTES.AUTH.SIGN_IN} replace />;
   }
 
-  if (user && isOnAuthRoute) {
+  // Don't redirect if on callback route - let the callback component handle it
+  if (user && isOnAuthRoute && !isOnCallbackRoute) {
+    console.log("Redirecting to dashboard...");
     return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 

@@ -10,6 +10,7 @@ import MassEvaluationList from "./pages/main/MassEvaluation";
 import BatchDetail from "./pages/main/MassEvaluation/BatchDetail";
 import Settings from "./pages/main/Settings";
 import SignUp from "./pages/auth/SignUp";
+import Callback from "./pages/auth/Callback";
 import Chatbot from "./pages/main/Chatbot";
 import ClassManagement from "./pages/main/ClassManagement";
 import StudentManagement from "./pages/main/StudentManagement";
@@ -30,6 +31,10 @@ const authRoutes = {
     {
       path: ROUTES.AUTH.SIGN_UP,
       element: <SignUp />,
+    },
+    {
+      path: ROUTES.AUTH.CALLBACK,
+      element: <Callback />,
     },
   ],
 };
