@@ -136,7 +136,7 @@ const DiagramDetail = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleFullscreen = (elementRef: React.RefObject<HTMLDivElement>) => {
+  const handleFullscreen = (elementRef: React.RefObject<HTMLDivElement | null>) => {
     if (elementRef.current) {
       elementRef.current.requestFullscreen().catch((err) => {
         toast.error("Fullscreen failed", { description: err.message });

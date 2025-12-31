@@ -8,7 +8,7 @@ export interface DiagramSchema {
   entities: DBEntity[];
 }
 
-export interface ERDSchema {
+export interface DiagramERDSchema {
   entities: ERDEntity[];
   relationships?: ERDRelationship[];
 }
@@ -17,7 +17,7 @@ export interface CreateDiagramInput {
   title: string;
   description?: string;
   schemaJson?: DiagramSchema;
-  erdSchemaJson?: ERDSchema;
+  erdSchemaJson?: DiagramERDSchema;
   ddlScript?: string;
   domain?: string;
   visibility: "Public" | "Private" | "Class";
@@ -28,7 +28,7 @@ export interface UpdateDiagramInput {
   title?: string;
   description?: string;
   schemaJson?: DiagramSchema;
-  erdSchemaJson?: ERDSchema;
+  erdSchemaJson?: DiagramERDSchema;
   ddlScript?: string;
   domain?: string;
   visibility?: "Public" | "Private" | "Class";
@@ -41,7 +41,7 @@ export interface DiagramResponse {
   title: string;
   description?: string;
   schemaJson?: DiagramSchema;
-  erdSchemaJson?: ERDSchema;
+  erdSchemaJson?: DiagramERDSchema;
   ddlScript?: string;
   domain?: string;
   visibility: "Public" | "Private" | "Class";
