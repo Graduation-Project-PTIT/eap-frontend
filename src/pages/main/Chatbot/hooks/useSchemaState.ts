@@ -47,13 +47,10 @@ export const useSchemaState = (initialSchema: SchemaState | null) => {
   // 2. The incoming schema is genuinely different from what we last synced
   //    (this handles the case where backend returns updated schema after save)
   useEffect(() => {
-    if (!initialSchema) {
-      return;
-    }
-
-    // If not dirty, always sync to latest from server
+    // If not dirty, always sync to latest from server (including null values)
     if (!isDirty) {
       if (!isSchemaEqual(schema, initialSchema)) {
+        console.log("🔄 [useSchemaState] Syncing schema:", initialSchema ? "present" : "null");
         setSchema(initialSchema);
         lastSyncedSchemaRef.current = initialSchema;
       }
@@ -68,6 +65,10 @@ export const useSchemaState = (initialSchema: SchemaState | null) => {
       // or from our own save that completed and refetched
       // For now, we trust the server and update
       // TODO: In the future, implement conflict resolution UI
+      console.log(
+        "🔄 [useSchemaState] Syncing schema (dirty):",
+        initialSchema ? "present" : "null",
+      );
       setSchema(initialSchema);
       lastSyncedSchemaRef.current = initialSchema;
       setIsDirty(false); // Reset dirty since we're syncing to server state

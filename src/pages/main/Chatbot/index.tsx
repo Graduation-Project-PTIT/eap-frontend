@@ -53,27 +53,43 @@ const Chatbot = () => {
     resetDirty,
   } = useSchemaState(conversationData?.schema || null);
 
-  // Reset state when navigating to new conversation
+  // Reset state when navigating to new conversation or switching conversations
   useEffect(() => {
+    console.log("🔄 [Chatbot] conversationId changed:", conversationId);
+
     if (!conversationId) {
       // Generate new conversation ID
       setLocalConversationId(generateConversationId());
-      // Reset all state
-      setMessages([]);
-      setInputValue("");
-      setError(null);
-      setCurrentDdl(null);
-      setCurrentErdSchema(null);
-      setDiagramType(undefined);
-      setShowSidebar(false);
+      console.log("📝 [Chatbot] New conversation - generated ID");
     } else {
       // Update local ID to match route
       setLocalConversationId(conversationId);
+      console.log("📝 [Chatbot] Existing conversation - using:", conversationId);
     }
+
+    // Always reset state when conversationId changes (including switching between conversations)
+    console.log("🧹 [Chatbot] Resetting all state...");
+    setMessages([]);
+    setInputValue("");
+    setError(null);
+    setCurrentDdl(null);
+    setCurrentErdSchema(null);
+    setDiagramType(undefined);
+    setShowSidebar(false);
+    console.log("✅ [Chatbot] State reset complete");
   }, [conversationId]);
 
   // Load conversation history on mount
   useEffect(() => {
+    console.log("📥 [Chatbot] conversationData changed:", {
+      exists: conversationData?.exists,
+      hasSchema: !!conversationData?.schema,
+      hasErdSchema: !!conversationData?.erdSchema,
+      hasDdl: !!conversationData?.currentDdl,
+      diagramType: conversationData?.diagramType,
+      conversationId: conversationData?.conversationId,
+    });
+
     if (conversationData && conversationData.exists) {
       // Load messages from conversation history
       if (conversationData.messages && conversationData.messages.length > 0) {
@@ -89,30 +105,38 @@ const Chatbot = () => {
           diagramType: msg.diagramType,
         }));
         setMessages(loadedMessages);
+        console.log("💬 [Chatbot] Loaded", loadedMessages.length, "messages");
       }
 
-      // Load DDL - prioritize currentDdl from conversation, fallback to latest message
+      // Load DDL - use unconditional assignment to clear when null
       if (conversationData.currentDdl) {
+        console.log("📜 [Chatbot] Setting DDL from conversation.currentDdl");
         setCurrentDdl(conversationData.currentDdl);
       } else if (conversationData.messages) {
         const lastMessageWithDdl = conversationData.messages
           ?.slice()
           .reverse()
           .find((msg) => msg.ddl);
-        if (lastMessageWithDdl?.ddl) {
-          setCurrentDdl(lastMessageWithDdl.ddl);
-        }
+        const ddlValue = lastMessageWithDdl?.ddl || null;
+        console.log("📜 [Chatbot] Setting DDL from messages:", ddlValue ? "found" : "null");
+        setCurrentDdl(ddlValue);
+      } else {
+        console.log("📜 [Chatbot] Setting DDL to null (no data)");
+        setCurrentDdl(null);
       }
 
-      // Load ERD Schema
-      if (conversationData.erdSchema) {
-        setCurrentErdSchema(conversationData.erdSchema);
-      }
+      // Load ERD Schema - use unconditional assignment to clear when null
+      const erdSchemaValue = conversationData.erdSchema || null;
+      console.log("🔷 [Chatbot] Setting ERD schema:", erdSchemaValue ? "present" : "null");
+      setCurrentErdSchema(erdSchemaValue);
 
-      // Load diagram type
-      if (conversationData.diagramType) {
-        setDiagramType(conversationData.diagramType);
-      }
+      // Load diagram type - use unconditional assignment to clear when undefined
+      console.log("📊 [Chatbot] Setting diagram type:", conversationData.diagramType);
+      setDiagramType(conversationData.diagramType);
+
+      console.log("✅ [Chatbot] Data loading complete");
+    } else {
+      console.log("⚠️ [Chatbot] No conversation data to load");
     }
   }, [conversationData]);
 

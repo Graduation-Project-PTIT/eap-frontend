@@ -5,15 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDiagram, useDeleteDiagram, useUpdateDiagram } from "@/api/services/diagram-service";
-import { ArrowLeft, Eye, Calendar, Trash2, Download, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  Calendar,
+  Trash2,
+  Download,
+  Globe,
+  Network,
+  Database,
+  FileCode,
+  Maximize2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/lib/toast";
 import VoteButtons from "./components/VoteButtons";
-import ERDDiagram from "@/components/erd/db-diagram-view";
+import DBDiagram from "@/components/erd/db-diagram-view";
+import ERDDiagram from "@/components/erd/erd-diagram-view";
 import getNodesForDBDiagram from "@/components/erd/db-diagram-view/utils/getNodesForDBDiagram";
 import { getEdgesForDBDiagram } from "@/components/erd/db-diagram-view/utils/getEdgesForDBDiagram";
 import getLayoutedElementsForDBDiagram from "@/components/erd/db-diagram-view/utils/getLayoutedElementsForDBDiagram";
-import { useMemo, useState } from "react";
+import { layoutChenNotation } from "@/components/erd/erd-diagram-view/utils/layoutChenNotation";
+import { useMemo, useState, useRef } from "react";
 import { getCurrentUser } from "aws-amplify/auth";
 import Editor from "@monaco-editor/react";
 import {
@@ -39,6 +52,10 @@ const DiagramDetail = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
 
+  // Refs for fullscreen
+  const erdDiagramRef = useRef<HTMLDivElement>(null);
+  const dbDiagramRef = useRef<HTMLDivElement>(null);
+
   const { data: diagram, isLoading, error } = useDiagram(id!);
   const deleteMutation = useDeleteDiagram();
   const updateMutation = useUpdateDiagram();
@@ -56,13 +73,42 @@ const DiagramDetail = () => {
 
   const isOwner = diagram && currentUserId && diagram.userId === currentUserId;
 
-  const { nodes, edges } = useMemo(() => {
+  // Generate Physical DB diagram nodes and edges
+  const { nodes: dbNodes, edges: dbEdges } = useMemo(() => {
     if (!diagram?.schemaJson?.entities) {
       return { nodes: [], edges: [] };
     }
     const initialNodes = getNodesForDBDiagram(diagram.schemaJson.entities);
     return getLayoutedElementsForDBDiagram(initialNodes, getEdgesForDBDiagram(initialNodes));
-  }, [diagram]);
+  }, [diagram?.schemaJson]);
+
+  // Generate ERD (Chen notation) diagram nodes and edges
+  const { nodes: erdNodes, edges: erdEdges } = useMemo(() => {
+    if (!diagram?.erdSchemaJson?.entities) {
+      return { nodes: [], edges: [] };
+    }
+    const layouted = layoutChenNotation(
+      diagram.erdSchemaJson.entities,
+      diagram.erdSchemaJson.relationships || [],
+      {
+        useDagreLayout: true,
+        direction: "LR",
+        attributeRadius: 180,
+        nodeSeparation: 0,
+        rankSeparation: 50,
+      },
+    );
+    return layouted;
+  }, [diagram?.erdSchemaJson]);
+
+  // Determine what tabs to show
+  const hasPhysicalDB = diagram?.schemaJson?.entities && diagram.schemaJson.entities.length > 0;
+  const hasERD = diagram?.erdSchemaJson?.entities && diagram.erdSchemaJson.entities.length > 0;
+  const hasDDL = !!diagram?.ddlScript;
+
+  // Calculate tab count and default tab
+  const tabCount = (hasERD ? 1 : 0) + (hasPhysicalDB ? 1 : 0) + (hasDDL ? 1 : 0);
+  const defaultTab = hasERD ? "erd" : hasPhysicalDB ? "physical" : "ddl";
 
   const handleDelete = async () => {
     if (!id) return;
@@ -77,7 +123,7 @@ const DiagramDetail = () => {
   };
 
   const handleDownloadDDL = () => {
-    if (!diagram) return;
+    if (!diagram || !diagram.ddlScript) return;
 
     const blob = new Blob([diagram.ddlScript], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -88,6 +134,14 @@ const DiagramDetail = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleFullscreen = (elementRef: React.RefObject<HTMLDivElement>) => {
+    if (elementRef.current) {
+      elementRef.current.requestFullscreen().catch((err) => {
+        toast.error("Fullscreen failed", { description: err.message });
+      });
+    }
   };
 
   const handlePublish = async () => {
@@ -238,56 +292,105 @@ const DiagramDetail = () => {
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue="diagram" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="diagram">Diagram</TabsTrigger>
-              <TabsTrigger value="ddl">DDL Script</TabsTrigger>
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className={`grid w-full grid-cols-${tabCount} max-w-2xl`}>
+              {hasERD && (
+                <TabsTrigger value="erd" className="flex items-center gap-2">
+                  <Network className="h-4 w-4" />
+                  ERD
+                </TabsTrigger>
+              )}
+              {hasPhysicalDB && (
+                <TabsTrigger value="physical" className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Physical DB
+                </TabsTrigger>
+              )}
+              {hasDDL && (
+                <TabsTrigger value="ddl" className="flex items-center gap-2">
+                  <FileCode className="h-4 w-4" />
+                  DDL Script
+                </TabsTrigger>
+              )}
             </TabsList>
 
-            {/* Diagram Tab */}
-            <TabsContent value="diagram" className="mt-6">
-              <div className="space-y-6">
-                {/* ERD Visualization */}
-                <Card className="h-[700px] overflow-hidden">
-                  <ERDDiagram initialNodes={nodes} initialEdges={edges} />
-                </Card>
+            {/* ERD (Chen Notation) Tab */}
+            {hasERD && (
+              <TabsContent value="erd" className="mt-6">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-end mb-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFullscreen(erdDiagramRef)}
+                    >
+                      <Maximize2 className="h-4 w-4 mr-2" />
+                      Fullscreen
+                    </Button>
+                  </div>
+                  <Card ref={erdDiagramRef} className="h-[700px] overflow-hidden">
+                    <ERDDiagram initialNodes={erdNodes} initialEdges={erdEdges} />
+                  </Card>
+                  {diagram.visibility !== "Private" && <FeedbackSection diagramId={diagram.id} />}
+                </div>
+              </TabsContent>
+            )}
 
-                {/* Hide Feedback Section for private diagrams */}
-                {diagram.visibility !== "Private" && <FeedbackSection diagramId={diagram.id} />}
-              </div>
-            </TabsContent>
+            {/* Physical DB Diagram Tab */}
+            {hasPhysicalDB && (
+              <TabsContent value="physical" className="mt-6">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-end mb-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFullscreen(dbDiagramRef)}
+                    >
+                      <Maximize2 className="h-4 w-4 mr-2" />
+                      Fullscreen
+                    </Button>
+                  </div>
+                  <Card ref={dbDiagramRef} className="h-[700px] overflow-hidden">
+                    <DBDiagram initialNodes={dbNodes} initialEdges={dbEdges} />
+                  </Card>
+                  {diagram.visibility !== "Private" && <FeedbackSection diagramId={diagram.id} />}
+                </div>
+              </TabsContent>
+            )}
 
             {/* DDL Script Tab */}
-            <TabsContent value="ddl" className="mt-6">
-              <div className="flex items-center justify-end mb-3">
-                <Button variant="outline" size="sm" onClick={handleDownloadDDL}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download SQL
-                </Button>
-              </div>
-              <Card className="overflow-hidden">
-                <div className="h-[600px]">
-                  <Editor
-                    height="600px"
-                    defaultLanguage="sql"
-                    value={diagram.ddlScript}
-                    options={{
-                      readOnly: true,
-                      minimap: { enabled: false },
-                      scrollBeyondLastLine: false,
-                      fontSize: 14,
-                      lineNumbers: "on",
-                      renderLineHighlight: "all",
-                      scrollbar: {
-                        vertical: "visible",
-                        horizontal: "visible",
-                      },
-                    }}
-                    theme="vs-dark"
-                  />
+            {hasDDL && (
+              <TabsContent value="ddl" className="mt-6">
+                <div className="flex items-center justify-end mb-3">
+                  <Button variant="outline" size="sm" onClick={handleDownloadDDL}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download SQL
+                  </Button>
                 </div>
-              </Card>
-            </TabsContent>
+                <Card className="overflow-hidden">
+                  <div className="h-[600px]">
+                    <Editor
+                      height="600px"
+                      defaultLanguage="sql"
+                      value={diagram.ddlScript}
+                      options={{
+                        readOnly: true,
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        fontSize: 14,
+                        lineNumbers: "on",
+                        renderLineHighlight: "all",
+                        scrollbar: {
+                          vertical: "visible",
+                          horizontal: "visible",
+                        },
+                      }}
+                      theme="vs-dark"
+                    />
+                  </div>
+                </Card>
+              </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>

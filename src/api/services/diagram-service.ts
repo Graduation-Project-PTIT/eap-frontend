@@ -1,17 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { diagramServiceClient } from "../client";
 import type { DBEntity } from "./evaluation-service";
+import type { ERDEntity, ERDRelationship } from "@/components/erd/erd-diagram-view/types";
 
 // Types
 export interface DiagramSchema {
   entities: DBEntity[];
 }
 
+export interface ERDSchema {
+  entities: ERDEntity[];
+  relationships?: ERDRelationship[];
+}
+
 export interface CreateDiagramInput {
   title: string;
   description?: string;
-  schemaJson: DiagramSchema;
-  ddlScript: string;
+  schemaJson?: DiagramSchema;
+  erdSchemaJson?: ERDSchema;
+  ddlScript?: string;
   domain?: string;
   visibility: "Public" | "Private" | "Class";
   classId?: string;
@@ -21,6 +28,7 @@ export interface UpdateDiagramInput {
   title?: string;
   description?: string;
   schemaJson?: DiagramSchema;
+  erdSchemaJson?: ERDSchema;
   ddlScript?: string;
   domain?: string;
   visibility?: "Public" | "Private" | "Class";
@@ -32,8 +40,9 @@ export interface DiagramResponse {
   userId: string;
   title: string;
   description?: string;
-  schemaJson: DiagramSchema;
-  ddlScript: string;
+  schemaJson?: DiagramSchema;
+  erdSchemaJson?: ERDSchema;
+  ddlScript?: string;
   domain?: string;
   visibility: "Public" | "Private" | "Class";
   classId?: string;

@@ -81,7 +81,11 @@ const ERDSidebar = ({
     visibility: "Public" | "Private" | "Class";
     classId?: string;
   }) => {
-    if (!schema || !ddl) {
+    // Check if at least ONE diagram type exists
+    const hasERD = erdSchema && erdSchema.entities && erdSchema.entities.length > 0;
+    const hasPhysicalDB = schema && schema.entities && schema.entities.length > 0;
+
+    if (!hasERD && !hasPhysicalDB) {
       toast.error("No diagram to share");
       return;
     }
@@ -90,8 +94,12 @@ const ERDSidebar = ({
       await createDiagram.mutateAsync({
         title: formData.title,
         description: formData.description,
-        schemaJson: schema,
-        ddlScript: ddl,
+        // Include Physical DB schema if it exists
+        ...(hasPhysicalDB && { schemaJson: schema }),
+        // Include ERD schema if it exists
+        ...(hasERD && { erdSchemaJson: erdSchema }),
+        // Include DDL if it exists
+        ...(ddl && { ddlScript: ddl }),
         visibility: formData.visibility,
         classId: formData.classId,
       });
