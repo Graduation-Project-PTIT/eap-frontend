@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PanelRightOpen } from "lucide-react";
@@ -7,14 +7,15 @@ import {
   useConversation,
   useUpdateConversationSchema,
 } from "@/api/services/chat-service";
-import type { ChatMessage, ERDSchema, DiagramType } from "@/api/services/chat-service";
 import { useSchemaState } from "./hooks/useSchemaState";
+import { useChatMessages } from "./hooks/useChatMessages";
+import { useChatSchema } from "./hooks/useChatSchema";
+import { useConversationTransition } from "./hooks/useConversationTransition";
 import { toast } from "@/lib/toast";
 import WelcomeView from "./components/WelcomeView";
 import ChatView from "./components/ChatView";
 import ERDSidebar from "./components/ERDSidebar";
 import ConversationList from "./components/ConversationList";
-import { generateConversationId } from "./utils/conversationUtils";
 import { createUserMessage, createAssistantMessage } from "./utils/messageUtils";
 import { cn } from "@/lib/utils";
 import "./styles/animations.css";
@@ -22,28 +23,36 @@ import "./styles/animations.css";
 const Chatbot = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
-  const isNewConversation = !conversationId;
 
-  // Generate UUID for new conversations - regenerate when conversationId changes
-  const [localConversationId, setLocalConversationId] = useState(
-    () => conversationId || generateConversationId(),
-  );
-
-  // State
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [showHistory, setShowHistory] = useState(true); // Show history sidebar by default
-  const [currentDdl, setCurrentDdl] = useState<string | null>(null);
-  const [currentErdSchema, setCurrentErdSchema] = useState<ERDSchema | null>(null);
-  const [diagramType, setDiagramType] = useState<DiagramType | undefined>(undefined);
-  const [enableSearch, setEnableSearch] = useState(true); // Enable web search by default
+  // Custom hooks for state management
+  const { localConversationId, isNewConversation, isTransitioningFromNewToFirst } =
+    useConversationTransition(conversationId);
 
   // API hooks
   const sendMessage = useSendMessage();
   const { data: conversationData } = useConversation(conversationId, !!conversationId);
   const updateConversationSchema = useUpdateConversationSchema();
+
+  // Messages state
+  const { messages, addMessage, resetMessages } = useChatMessages(conversationData);
+
+  // Schema state
+  const {
+    currentDdl,
+    currentErdSchema,
+    diagramType,
+    setCurrentDdl,
+    setCurrentErdSchema,
+    setDiagramType,
+    resetSchema,
+  } = useChatSchema(conversationData);
+
+  // Local UI state
+  const [inputValue, setInputValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
+  const [enableSearch, setEnableSearch] = useState(true);
 
   // Schema state management with dirty tracking
   const {
@@ -53,95 +62,33 @@ const Chatbot = () => {
     resetDirty,
   } = useSchemaState(conversationData?.schema || null);
 
-  // Reset state when navigating to new conversation or switching conversations
+  // Reset state when switching conversations (not on first message)
   useEffect(() => {
-    console.log("🔄 [Chatbot] conversationId changed:", conversationId);
+    if (!isTransitioningFromNewToFirst && conversationId !== undefined) {
+      // Only reset when switching between existing conversations
+      if (!isNewConversation) {
+        return; // Data loaded by hooks
+      }
+    }
 
+    // Reset state for new conversations
     if (!conversationId) {
-      // Generate new conversation ID
-      setLocalConversationId(generateConversationId());
-      console.log("📝 [Chatbot] New conversation - generated ID");
-    } else {
-      // Update local ID to match route
-      setLocalConversationId(conversationId);
-      console.log("📝 [Chatbot] Existing conversation - using:", conversationId);
+      resetMessages();
+      setInputValue("");
+      setError(null);
+      resetSchema();
+      setShowSidebar(false);
     }
+  }, [
+    conversationId,
+    isNewConversation,
+    isTransitioningFromNewToFirst,
+    resetMessages,
+    resetSchema,
+  ]);
 
-    // Always reset state when conversationId changes (including switching between conversations)
-    console.log("🧹 [Chatbot] Resetting all state...");
-    setMessages([]);
-    setInputValue("");
-    setError(null);
-    setCurrentDdl(null);
-    setCurrentErdSchema(null);
-    setDiagramType(undefined);
-    setShowSidebar(false);
-    console.log("✅ [Chatbot] State reset complete");
-  }, [conversationId]);
-
-  // Load conversation history on mount
-  useEffect(() => {
-    console.log("📥 [Chatbot] conversationData changed:", {
-      exists: conversationData?.exists,
-      hasSchema: !!conversationData?.schema,
-      hasErdSchema: !!conversationData?.erdSchema,
-      hasDdl: !!conversationData?.currentDdl,
-      diagramType: conversationData?.diagramType,
-      conversationId: conversationData?.conversationId,
-    });
-
-    if (conversationData && conversationData.exists) {
-      // Load messages from conversation history
-      if (conversationData.messages && conversationData.messages.length > 0) {
-        const loadedMessages: ChatMessage[] = conversationData.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.timestamp),
-          schema: msg.schema,
-          erdSchema: msg.erdSchema,
-          ddl: msg.ddl,
-          runId: msg.runId,
-          diagramType: msg.diagramType,
-        }));
-        setMessages(loadedMessages);
-        console.log("💬 [Chatbot] Loaded", loadedMessages.length, "messages");
-      }
-
-      // Load DDL - use unconditional assignment to clear when null
-      if (conversationData.currentDdl) {
-        console.log("📜 [Chatbot] Setting DDL from conversation.currentDdl");
-        setCurrentDdl(conversationData.currentDdl);
-      } else if (conversationData.messages) {
-        const lastMessageWithDdl = conversationData.messages
-          ?.slice()
-          .reverse()
-          .find((msg) => msg.ddl);
-        const ddlValue = lastMessageWithDdl?.ddl || null;
-        console.log("📜 [Chatbot] Setting DDL from messages:", ddlValue ? "found" : "null");
-        setCurrentDdl(ddlValue);
-      } else {
-        console.log("📜 [Chatbot] Setting DDL to null (no data)");
-        setCurrentDdl(null);
-      }
-
-      // Load ERD Schema - use unconditional assignment to clear when null
-      const erdSchemaValue = conversationData.erdSchema || null;
-      console.log("🔷 [Chatbot] Setting ERD schema:", erdSchemaValue ? "present" : "null");
-      setCurrentErdSchema(erdSchemaValue);
-
-      // Load diagram type - use unconditional assignment to clear when undefined
-      console.log("📊 [Chatbot] Setting diagram type:", conversationData.diagramType);
-      setDiagramType(conversationData.diagramType);
-
-      console.log("✅ [Chatbot] Data loading complete");
-    } else {
-      console.log("⚠️ [Chatbot] No conversation data to load");
-    }
-  }, [conversationData]);
-
-  // Handle save schema
-  const handleSaveSchema = async () => {
+  // Handle save schema with useCallback
+  const handleSaveSchema = useCallback(async () => {
     if (!conversationId || !currentSchema || !isSchemaDirty) return;
 
     try {
@@ -165,14 +112,14 @@ const Chatbot = () => {
         description: "Failed to save schema. Please try again.",
       });
     }
-  };
+  }, [conversationId, currentSchema, isSchemaDirty, updateConversationSchema, resetDirty]);
 
-  // Handle sending a message
-  const handleSend = async () => {
+  // Handle sending a message with useCallback
+  const handleSend = useCallback(async () => {
     if (!inputValue.trim() || sendMessage.isPending) return;
 
     const userMessage = createUserMessage(inputValue);
-    setMessages((prev) => [...prev, userMessage]);
+    addMessage(userMessage);
     setInputValue("");
     setError(null);
 
@@ -189,7 +136,7 @@ const Chatbot = () => {
       });
 
       const assistantMessage = createAssistantMessage(response);
-      setMessages((prev) => [...prev, assistantMessage]);
+      addMessage(assistantMessage);
 
       // Update schemas based on response (only if not blocked)
       if (!response.blocked) {
@@ -209,28 +156,37 @@ const Chatbot = () => {
         }
       }
     } catch (err) {
-      console.error("Chat error:", err);
-      setError("Something went wrong. Please try again.");
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(errorMessage);
     }
-  };
+  }, [
+    inputValue,
+    sendMessage,
+    isNewConversation,
+    localConversationId,
+    enableSearch,
+    navigate,
+    addMessage,
+  ]);
 
-  // Handle suggested prompt click
-  const handleSuggestedPromptClick = (prompt: string) => {
+  // Handle suggested prompt click with useCallback
+  const handleSuggestedPromptClick = useCallback((prompt: string) => {
     setInputValue(prompt);
-  };
+  }, []);
 
-  // Handle retry after error
-  const handleRetry = () => {
+  // Handle retry after error with useCallback
+  const handleRetry = useCallback(() => {
     setError(null);
     if (inputValue.trim()) {
       handleSend();
     }
-  };
+  }, [inputValue, handleSend]);
 
-  // Handle schema click
-  const handleSchemaClick = () => {
+  // Handle schema click with useCallback
+  const handleSchemaClick = useCallback(() => {
     setShowSidebar(true);
-  };
+  }, []);
 
   return (
     <div className="relative h-[calc(100vh-64px)] flex overflow-hidden -m-4">
