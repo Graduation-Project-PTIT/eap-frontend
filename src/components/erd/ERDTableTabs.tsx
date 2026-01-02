@@ -14,6 +14,11 @@ import {
   layoutChenNotation,
   type ERDLayoutResult,
 } from "./erd-diagram-view/utils/layoutChenNotation";
+import DBDiagram from "./db-diagram-view";
+import type { DBLayoutResult } from "./db-diagram-view/utils/getLayoutedElementsForDBDiagram";
+import getLayoutedElementsForDBDiagram from "./db-diagram-view/utils/getLayoutedElementsForDBDiagram";
+import getNodesForDBDiagram from "./db-diagram-view/utils/getNodesForDBDiagram";
+import { getEdgesForDBDiagram } from "./db-diagram-view/utils/getEdgesForDBDiagram";
 
 type ViewMode = "table" | "diagram";
 
@@ -32,7 +37,7 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>(data.entities[0]?.name || "");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [layoutResult, setLayoutResult] = useState<ERDLayoutResult>(() => {
+  const [layoutResult, setLayoutResult] = useState<ERDLayoutResult | DBLayoutResult>(() => {
     if (data.type === "ERD") {
       return layoutChenNotation(data.entities, data.relationships, {
         useDagreLayout: true,
@@ -41,7 +46,10 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
         nodeSeparation: 0,
         rankSeparation: 50,
       });
-    } else return { nodes: [], edges: [] };
+    } else {
+      const nodes = getNodesForDBDiagram(data.entities);
+      return getLayoutedElementsForDBDiagram(nodes, getEdgesForDBDiagram(nodes));
+    }
   });
 
   useEffect(() => {
@@ -180,7 +188,12 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
             </div>
           ) : (
             <div className="h-full w-full">
-              <ERDDiagram initialNodes={layoutResult.nodes} initialEdges={layoutResult.edges} />
+              {layoutResult.type === "PHYSICAL_DB" && (
+                <DBDiagram initialNodes={layoutResult.nodes} initialEdges={layoutResult.edges} />
+              )}
+              {layoutResult.type === "ERD" && (
+                <ERDDiagram initialNodes={layoutResult.nodes} initialEdges={layoutResult.edges} />
+              )}
             </div>
           )}
         </div>

@@ -8,14 +8,17 @@ const nodeHeight = 180;
 
 const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
 
+export interface DBLayoutResult {
+  type: "PHYSICAL_DB";
+  nodes: Node<DBNodeData>[];
+  edges: Edge<DBEdgeData>[];
+}
+
 const getLayoutedElementsForDBDiagram = (
   nodes: Node<DBNodeData>[],
   edges: Edge<DBEdgeData>[],
   direction = "LR",
-): {
-  nodes: Node<DBNodeData>[];
-  edges: Edge<DBEdgeData>[];
-} => {
+): DBLayoutResult => {
   const isHorizontal = direction === "LR";
   dagreGraph.setGraph({ rankdir: direction });
 
@@ -44,7 +47,7 @@ const getLayoutedElementsForDBDiagram = (
     return newNode as Node<DBNodeData>;
   });
 
-  return { nodes: newNodes, edges };
+  return { type: "PHYSICAL_DB", nodes: newNodes, edges };
 };
 
 export default getLayoutedElementsForDBDiagram;

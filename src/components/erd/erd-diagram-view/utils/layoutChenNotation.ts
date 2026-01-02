@@ -199,6 +199,7 @@ const buildDagreGraph = (
 // ============================================================================
 
 export interface ERDLayoutResult {
+  type: "ERD";
   nodes: Node<ERDNodeData>[];
   edges: Edge<ERDEdgeData>[];
 }
@@ -391,7 +392,7 @@ export const layoutChenNotation = (
     });
   });
 
-  return { nodes, edges };
+  return { type: "ERD", nodes, edges };
 };
 
 // ============================================================================
