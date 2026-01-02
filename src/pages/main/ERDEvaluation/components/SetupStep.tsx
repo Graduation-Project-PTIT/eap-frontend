@@ -145,7 +145,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
 
   const onSubmit = async (data: SetupStepFormData) => {
     if (!data.erdImage) {
-      toast.error("Please upload an ERD image");
+      toast.error("Please upload a diagram image");
       return;
     }
 
@@ -165,7 +165,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       setPreferredFormat(preferredFormat);
 
       // Upload file to file service
-      toast.info("Uploading ERD image...");
+      toast.info("Uploading diagram image...");
       const uploadResult = await uploadFile.mutateAsync({ file: data.erdImage });
 
       if (!uploadResult.file) {
@@ -177,7 +177,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
       setFileUrl(fileUrl);
 
       toast.success("Setup completed successfully!");
-      toast.info("Starting ERD evaluation...");
+      toast.info("Starting diagram evaluation...");
 
       // Get user token from auth session
       const session = await fetchAuthSession();
@@ -206,7 +206,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
   return (
     <div className="space-y-6 relative">
       {state.isLoading && (
-        <LoadingSpinner fullScreen={true} message="Processing your ERD image..." size="lg" />
+        <LoadingSpinner fullScreen={true} message="Processing your diagram image..." size="lg" />
       )}
       <Card>
         <CardHeader>
@@ -311,7 +311,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                     <FormLabel>Question Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter a detailed description of the objective of the ERD. For example: 'Below is an ERD for an e-commerce system focusing on user management, product catalog, and order processing...'"
+                        placeholder="Enter a detailed description of the objective of the diagram. For example: 'Below is an diagram for an e-commerce system focusing on user management, product catalog, and order processing...'"
                         className="min-h-32"
                         {...field}
                       />
@@ -330,7 +330,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                 name="erdImage"
                 render={() => (
                   <FormItem>
-                    <FormLabel>ERD Image Upload</FormLabel>
+                    <FormLabel>Diagram Image Upload</FormLabel>
                     <FormControl>
                       <div className="space-y-2">
                         {!imagePreview ? (
@@ -351,9 +351,9 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                                 <Upload className="h-8 w-8 text-muted-foreground" />
                               </div>
                               <div>
-                                <p className="text-lg font-medium">Upload ERD Image</p>
+                                <p className="text-lg font-medium">Upload Diagram Image</p>
                                 <p className="text-sm text-muted-foreground">
-                                  Drag and drop your ERD image here, or click to browse
+                                  Drag and drop your diagram image here, or click to browse
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-2">
                                   Supports: PNG, JPG, JPEG (Max 10MB)
@@ -366,7 +366,7 @@ const SetupStep: FC<SetupStepProps> = ({ onNext }) => {
                             <div className="relative border rounded-lg overflow-hidden">
                               <img
                                 src={imagePreview}
-                                alt="ERD Preview"
+                                alt="Diagram Preview"
                                 className="w-full max-h-96 object-contain bg-muted"
                               />
                               <Button

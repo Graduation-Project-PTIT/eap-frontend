@@ -76,6 +76,8 @@ const EvaluationDetailDialog = ({
 
   if (!evaluation) return null;
 
+  console.log(evaluation);
+
   const handleDownloadReport = () => {
     if (!evaluation.evaluationReport) return;
 
@@ -120,9 +122,9 @@ const EvaluationDetailDialog = ({
         <div className="flex gap-6 p-6 flex-1 overflow-hidden">
           {/* Left Side - Image Preview & Info (40%) */}
           <div className="flex flex-col overflow-hidden w-[40%] space-y-4">
-            {/* ERD Diagram - 70% */}
+            {/* Diagram - 70% */}
             <div className="flex flex-col overflow-hidden h-[70%]">
-              <h3 className="text-sm font-semibold mb-3 shrink-0">ERD Diagram</h3>
+              <h3 className="text-sm font-semibold mb-3 shrink-0">Uploaded Diagram</h3>
               <div className="flex-1 border rounded-lg overflow-auto bg-muted/30 flex items-center justify-center min-h-0">
                 {imageLoading ? (
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
@@ -137,7 +139,7 @@ const EvaluationDetailDialog = ({
                 ) : (
                   <img
                     src={imageUrl}
-                    alt="ERD Diagram"
+                    alt="Diagram"
                     className="max-w-full max-h-full object-contain p-4"
                     onError={() => setImageError(true)}
                   />
@@ -278,7 +280,7 @@ const EvaluationDetailDialog = ({
             {evaluation.extractedInformation && (
               <Card className="shrink-0">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Extracted ERD Information</CardTitle>
+                  <CardTitle className="text-base">Extracted Diagram Information</CardTitle>
                 </CardHeader>
                 <CardContent className="max-h-96 overflow-auto">
                   <ERDFormatTabs data={evaluation.extractedInformation} isEditable={false} />

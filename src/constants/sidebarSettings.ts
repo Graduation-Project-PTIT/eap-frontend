@@ -1,4 +1,4 @@
-import { Home, Database, Bot, BarChart3, Layers, Users, GraduationCap } from "lucide-react";
+import { Database, Bot, BarChart3, Layers, Users, GraduationCap } from "lucide-react";
 import ROUTES from "./routes";
 
 export interface SidebarItem {
@@ -10,12 +10,6 @@ export interface SidebarItem {
 }
 
 const sidebarSettings: SidebarItem[] = [
-  {
-    title: "Dashboard",
-    url: ROUTES.DASHBOARD,
-    icon: Home,
-    group: "Navigation",
-  },
   {
     title: "Chatbot",
     url: ROUTES.CHATBOT,
@@ -29,7 +23,7 @@ const sidebarSettings: SidebarItem[] = [
     group: "User",
   },
   {
-    title: "ERD Evaluation",
+    title: "Diagram Evaluation",
     url: ROUTES.ERD_EVALUATION,
     icon: BarChart3,
     group: "User",

@@ -211,10 +211,10 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
             <div className="text-center py-12">
               <div className="flex flex-col items-center space-y-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <h3 className="text-lg font-medium">AI is evaluating your ERD...</h3>
+                <h3 className="text-lg font-medium">AI is evaluating your diagram...</h3>
                 <p className="text-muted-foreground">
-                  Please wait while our AI agent analyzes your refined ERD structure and generates a
-                  comprehensive evaluation report.
+                  Please wait while our AI agent analyzes your refined diagram structure and
+                  generates a comprehensive evaluation report.
                 </p>
               </div>
             </div>
@@ -225,7 +225,7 @@ const EvaluationStep: FC<EvaluationStepProps> = ({ onBack }) => {
         {finalData && finalData.entities.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Your Refined ERD Structure</CardTitle>
+              <CardTitle>Your Refined Diagram Structure</CardTitle>
             </CardHeader>
             <CardContent>
               <ERDTableTabs data={finalData} isEditable={false} />

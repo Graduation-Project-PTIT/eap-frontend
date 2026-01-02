@@ -41,7 +41,7 @@ const TopNavbar = () => {
       settings: "Settings",
       profile: "Profile",
       "user-management": "User Management",
-      "erd-evaluation": "ERD Evaluation",
+      "erd-evaluation": "Diagram Evaluation",
       "mass-evaluation": "Mass Evaluation",
       "class-management": "Class Management",
       "student-management": "Student Management",

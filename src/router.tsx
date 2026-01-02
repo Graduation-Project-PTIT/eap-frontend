@@ -4,7 +4,6 @@ import MainLayout from "./layout/MainLayout";
 import SignIn from "./pages/auth/SignIn";
 import Forbidden from "./pages/fallback/Forbidden";
 import NotFound from "./pages/fallback/NotFound";
-import Dashboard from "./pages/main/Dashboard";
 import ERDEvaluation from "./pages/main/ERDEvaluation";
 import MassEvaluationList from "./pages/main/MassEvaluation";
 import BatchDetail from "./pages/main/MassEvaluation/BatchDetail";
@@ -45,7 +44,7 @@ const mainRoutes = {
   children: [
     {
       index: true,
-      element: <Dashboard />,
+      element: <Navigate to={ROUTES.CHATBOT} replace />,
     },
     {
       path: ROUTES.CHATBOT,

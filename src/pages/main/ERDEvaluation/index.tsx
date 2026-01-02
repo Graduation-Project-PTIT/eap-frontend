@@ -76,9 +76,9 @@ const ERDEvaluationContent = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">ERD Evaluation</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Diagram Evaluation</h1>
               <p className="text-muted-foreground">
-                Evaluate and analyze Entity Relationship Diagrams through our guided workflow
+                Evaluate and analyze diagrams through our guided workflow
               </p>
             </div>
             <Button

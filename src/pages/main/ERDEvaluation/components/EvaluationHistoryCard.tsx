@@ -90,7 +90,7 @@ const EvaluationHistoryCard = ({ evaluation, onViewDetails }: EvaluationHistoryC
           ) : (
             <img
               src={imageUrl}
-              alt="ERD Preview"
+              alt="Diagram Preview"
               className="h-full w-full object-contain"
               onError={() => setImageError(true)}
             />
