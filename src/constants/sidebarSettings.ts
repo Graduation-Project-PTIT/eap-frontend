@@ -32,6 +32,7 @@ const sidebarSettings: SidebarItem[] = [
     title: "Mass Evaluation",
     url: ROUTES.MASS_EVALUATION.ROOT,
     icon: Layers,
+    requiredRole: "teacher",
     group: "Teacher",
   },
   {
