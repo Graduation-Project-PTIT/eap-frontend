@@ -53,6 +53,7 @@ const Chatbot = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
   const [enableSearch, setEnableSearch] = useState(true);
+  const [sidebarActiveTab, setSidebarActiveTab] = useState<string | undefined>(undefined);
 
   // Schema state management with dirty tracking
   const {
@@ -184,9 +185,34 @@ const Chatbot = () => {
   }, [inputValue, handleSend]);
 
   // Handle schema click with useCallback
-  const handleSchemaClick = useCallback(() => {
-    setShowSidebar(true);
-  }, []);
+  const handleSchemaClick = useCallback(
+    (tabToOpen?: string) => {
+      console.log("🖱️ Schema click - tab to open:", tabToOpen);
+      console.log(
+        "📊 Current schemas - ERD:",
+        currentErdSchema,
+        "Physical:",
+        currentSchema,
+        "DDL:",
+        currentDdl?.substring(0, 50),
+      );
+
+      // Override tab selection based on what actually exists in conversation state
+      let actualTab = tabToOpen;
+      if (tabToOpen === "physical" && !currentSchema) {
+        console.log("⚠️ Physical tab requested but no physical schema exists, switching to ERD");
+        actualTab = "erd";
+      } else if (tabToOpen === "erd" && !currentErdSchema) {
+        console.log("⚠️ ERD tab requested but no ERD schema exists, switching to Physical");
+        actualTab = "physical";
+      }
+
+      console.log("✅ Final tab to open:", actualTab);
+      setSidebarActiveTab(actualTab);
+      setShowSidebar(true);
+    },
+    [currentErdSchema, currentSchema, currentDdl],
+  );
 
   return (
     <div className="relative h-[calc(100vh-64px)] flex overflow-hidden -m-4">
@@ -257,6 +283,7 @@ const Chatbot = () => {
           isSchemaDirty={isSchemaDirty}
           isSaving={updateConversationSchema.isPending}
           diagramType={diagramType}
+          activeTab={sidebarActiveTab}
         />
       </div>
     </div>

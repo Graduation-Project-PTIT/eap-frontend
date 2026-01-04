@@ -13,10 +13,10 @@ interface WelcomeViewProps {
 }
 
 const SUGGESTED_PROMPTS = [
-  "Design a database for an e-commerce platform",
-  "Create a schema for a social media application",
-  "Build a database for a library management system",
-  "Design tables for a hotel booking system",
+  "Design an ERD for an e-commerce platform",
+  "Create an ERD for a social media application",
+  "Design a database schema for a library management system",
+  "Design tables for a hospital management system",
 ];
 
 const WelcomeView = ({
@@ -40,12 +40,13 @@ const WelcomeView = ({
         </div>
 
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-          Database Schema Design Assistant
+          ERD Design Assistant
         </h1>
 
         <p className="text-lg text-muted-foreground">
-          Describe your database requirements in natural language, and I'll help you design a
-          complete schema with entities, relationships, and DDL scripts.
+          Describe your requirements in natural language, and I'll help you design a complete ERD
+          with entities and relationships. You can then convert your ERD to database schema with DDL
+          scripts.
         </p>
       </div>
 
@@ -74,7 +75,7 @@ const WelcomeView = ({
           onChange={onInputChange}
           onSend={onSend}
           isLoading={isLoading}
-          placeholder="Describe your database requirements..."
+          placeholder="Describe your ERD requirements or ask to convert ERD to database schema..."
           className="shadow-lg"
           enableSearch={enableSearch}
           onEnableSearchChange={onEnableSearchChange}

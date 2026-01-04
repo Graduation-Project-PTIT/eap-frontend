@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,6 +28,7 @@ interface ERDSidebarProps {
   isSchemaDirty?: boolean;
   isSaving?: boolean;
   diagramType?: DiagramType;
+  activeTab?: string; // Control which tab is active when opening
 }
 
 const ERDSidebar = ({
@@ -41,9 +42,42 @@ const ERDSidebar = ({
   isSchemaDirty = false,
   isSaving = false,
   diagramType,
+  activeTab,
 }: ERDSidebarProps) => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const createDiagram = useCreateDiagram();
+
+  // State for controlling active tab - must be before early return
+  const [currentTab, setCurrentTab] = useState<string>("erd");
+
+  // Check schema availability
+  const hasPhysicalSchema = schema && schema.entities && schema.entities.length > 0;
+  const hasErdSchema = erdSchema && erdSchema.entities && erdSchema.entities.length > 0;
+  const hasAnySchema = hasPhysicalSchema || hasErdSchema;
+
+  // Update current tab when activeTab prop changes or sidebar opens
+  useEffect(() => {
+    console.log(
+      "🔄 ERDSidebar effect - isOpen:",
+      isOpen,
+      "activeTab:",
+      activeTab,
+      "hasErd:",
+      hasErdSchema,
+      "hasPhysical:",
+      hasPhysicalSchema,
+    );
+    if (isOpen && activeTab) {
+      console.log("📌 Setting currentTab to activeTab:", activeTab);
+      setCurrentTab(activeTab);
+    } else if (isOpen) {
+      // Set default tab when opening without explicit activeTab
+      const defaultTab =
+        hasErdSchema && !hasPhysicalSchema ? "erd" : hasPhysicalSchema ? "physical" : "erd";
+      console.log("📌 Setting currentTab to defaultTab:", defaultTab);
+      setCurrentTab(defaultTab);
+    }
+  }, [isOpen, activeTab, hasErdSchema, hasPhysicalSchema]);
 
   // Generate Physical DB diagram nodes and edges
   const { dbNodes, dbEdges } = useMemo(() => {
@@ -61,9 +95,11 @@ const ERDSidebar = ({
   // Generate ERD (Chen notation) diagram nodes and edges
   const { erdNodes, erdEdges } = useMemo(() => {
     if (!erdSchema || !erdSchema.entities || erdSchema.entities.length === 0) {
+      console.log("❌ ERD: No schema or empty entities");
       return { erdNodes: [], erdEdges: [] };
     }
 
+    console.log("✅ ERD: Generating layout for", erdSchema.entities.length, "entities");
     const layouted = layoutChenNotation(erdSchema.entities, erdSchema.relationships || [], {
       useDagreLayout: true,
       direction: "LR",
@@ -72,6 +108,13 @@ const ERDSidebar = ({
       rankSeparation: 50,
     });
 
+    console.log(
+      "✅ ERD: Generated",
+      layouted.nodes.length,
+      "nodes and",
+      layouted.edges.length,
+      "edges",
+    );
     return { erdNodes: layouted.nodes, erdEdges: layouted.edges };
   }, [erdSchema]);
 
@@ -112,10 +155,6 @@ const ERDSidebar = ({
 
   if (!isOpen) return null;
 
-  const hasPhysicalSchema = schema && schema.entities && schema.entities.length > 0;
-  const hasErdSchema = erdSchema && erdSchema.entities && erdSchema.entities.length > 0;
-  const hasAnySchema = hasPhysicalSchema || hasErdSchema;
-
   // Determine header title based on diagram type
   const headerTitle =
     diagramType === "ERD"
@@ -129,10 +168,6 @@ const ERDSidebar = ({
       : diagramType === "PHYSICAL_DB"
         ? "Physical database schema and DDL"
         : "Generated diagram";
-
-  // Determine default tab based on what's available
-  const defaultTab =
-    hasErdSchema && !hasPhysicalSchema ? "erd" : hasPhysicalSchema ? "physical" : "erd";
 
   // Count available tabs
   const tabCount = (hasErdSchema ? 1 : 0) + (hasPhysicalSchema ? 1 : 0) + (ddl ? 1 : 0);
@@ -193,7 +228,11 @@ const ERDSidebar = ({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {hasAnySchema ? (
-          <Tabs defaultValue={defaultTab} className="w-full h-full flex flex-col">
+          <Tabs
+            value={currentTab}
+            onValueChange={setCurrentTab}
+            className="w-full h-full flex flex-col"
+          >
             <TabsList className={`grid w-full max-w-lg grid-cols-${Math.max(tabCount, 2)}`}>
               {hasErdSchema && (
                 <TabsTrigger value="erd" className="flex items-center gap-2">
@@ -215,7 +254,8 @@ const ERDSidebar = ({
               )}
             </TabsList>
 
-            {/* ERD (Chen Notation) Tab */}
+            {/* {console.log("🎨 Rendering ERD TabContent - nodes:", erdNodes.length, "edges:", erdEdges.length)}
+                ERD (Chen Notation) Tab */}
             {hasErdSchema && (
               <TabsContent value="erd" className="flex-1 mt-4">
                 <Card className="h-[calc(100vh-200px)] overflow-hidden">

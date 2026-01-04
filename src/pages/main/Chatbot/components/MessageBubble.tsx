@@ -7,12 +7,43 @@ import MarkdownRender from "@/components/ui/markdown-render";
 
 interface MessageBubbleProps {
   message: ChatMessage;
-  onSchemaClick?: () => void;
+  onSchemaClick?: (tabToOpen?: string) => void;
 }
 
 const MessageBubble = ({ message, onSchemaClick }: MessageBubbleProps) => {
   const isUser = message.role === "user";
-  const hasSchema = !!message.schema && message.schema.entities.length > 0;
+
+  // Check for both Physical DB schema and ERD schema
+  const hasPhysicalSchema = !!message.schema && message.schema.entities.length > 0;
+  const hasErdSchema = !!message.erdSchema && message.erdSchema.entities.length > 0;
+  const hasSchema = hasPhysicalSchema || hasErdSchema;
+
+  // Determine which tab to open based on diagram type
+  const getTabToOpen = () => {
+    console.log("🔍 MessageBubble getTabToOpen - Message data:", {
+      diagramType: message.diagramType,
+      hasPhysical: hasPhysicalSchema,
+      hasErd: hasErdSchema,
+      schemaEntities: message.schema?.entities?.length || 0,
+      erdSchemaEntities: message.erdSchema?.entities?.length || 0,
+      erdSchemaType: typeof message.erdSchema,
+      erdSchemaKeys: message.erdSchema ? Object.keys(message.erdSchema) : [],
+    });
+
+    // First priority: use the diagram type from message
+    if (message.diagramType === "ERD") return "erd";
+    if (message.diagramType === "PHYSICAL_DB") return "physical";
+
+    // Fallback: if only one type exists, use that
+    if (hasErdSchema && !hasPhysicalSchema) return "erd";
+    if (hasPhysicalSchema && !hasErdSchema) return "physical";
+
+    // If both exist, prefer physical (conversion case)
+    if (hasPhysicalSchema) return "physical";
+
+    // Default to erd as last resort
+    return "erd";
+  };
 
   const formatTimestamp = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -40,7 +71,12 @@ const MessageBubble = ({ message, onSchemaClick }: MessageBubbleProps) => {
           </span>
 
           {hasSchema && onSchemaClick && (
-            <Button variant="ghost" size="sm" onClick={onSchemaClick} className="h-6 px-2 text-xs">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSchemaClick(getTabToOpen())}
+              className="h-6 px-2 text-xs"
+            >
               <Database className="h-3 w-3 mr-1" />
               View Schema
             </Button>

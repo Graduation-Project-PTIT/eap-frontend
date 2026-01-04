@@ -15,7 +15,7 @@ interface ChatViewProps {
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
-  onSchemaClick: () => void;
+  onSchemaClick: (tabToOpen?: string) => void;
   enableSearch?: boolean;
   onEnableSearchChange?: (enabled: boolean) => void;
 }
@@ -46,15 +46,20 @@ const ChatView = ({
     <div className="flex flex-col h-full animate-in fade-in duration-300">
       {/* Messages Container */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            onSchemaClick={
-              message.schema && message.schema.entities.length > 0 ? onSchemaClick : undefined
-            }
-          />
-        ))}
+        {messages.map((message) => {
+          // Check if message has either Physical DB or ERD schema
+          const hasPhysicalSchema = message.schema && message.schema.entities.length > 0;
+          const hasErdSchema = message.erdSchema && message.erdSchema.entities.length > 0;
+          const hasAnySchema = hasPhysicalSchema || hasErdSchema;
+
+          return (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              onSchemaClick={hasAnySchema ? onSchemaClick : undefined}
+            />
+          );
+        })}
 
         {/* Typing Indicator */}
         {isLoading && <TypingIndicator />}
