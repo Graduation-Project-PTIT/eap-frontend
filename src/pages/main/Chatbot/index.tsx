@@ -52,7 +52,7 @@ const Chatbot = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
-  const [enableSearch, setEnableSearch] = useState(true);
+  const [enableSearch, setEnableSearch] = useState(false);
   const [sidebarActiveTab, setSidebarActiveTab] = useState<string | undefined>(undefined);
 
   // Schema state management with dirty tracking
