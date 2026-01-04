@@ -40,6 +40,8 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   const isUndoingRef = useRef(false);
   const lastSavedDataRef = useRef<string>("");
 
+  const diagramType = state.extractedData?.type;
+
   // Hook for sending finish-refinement event to the workflow
   const sendFinishRefinement = useSendFinishRefinementEvent({
     onSuccess: () => {
@@ -153,19 +155,41 @@ const ManualRefineStep: FC<ManualRefineStepProps> = ({ onNext, onBack }) => {
   };
 
   const handleAddEntity = () => {
-    const newEntity: DBEntity | ERDEntity = {
-      name: "new_entity",
-      attributes: [
-        {
-          name: "id",
-          type: "INT",
-          primaryKey: true,
-          foreignKey: false,
-          unique: true,
-          nullable: false,
-        },
-      ],
-    };
+    let newEntity: DBEntity | ERDEntity;
+
+    if (diagramType === "PHYSICAL_DB") {
+      newEntity = {
+        name: "new_entity",
+        attributes: [
+          {
+            name: "id",
+            type: "INT",
+            primaryKey: true,
+            foreignKey: false,
+            unique: true,
+            nullable: false,
+          },
+        ],
+      };
+    } else {
+      newEntity = {
+        name: "new_entity",
+        attributes: [
+          {
+            name: "id",
+            type: "INT",
+            primaryKey: true,
+            foreignKey: false,
+            unique: true,
+            nullable: false,
+            isMultivalued: false,
+            isDerived: false,
+            isComposite: false,
+          },
+        ],
+        isWeakEntity: false,
+      };
+    }
 
     let newUpdatedData: DBExtractionResult | ERDExtractionResult;
 

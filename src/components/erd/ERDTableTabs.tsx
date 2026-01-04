@@ -19,12 +19,16 @@ import type { DBLayoutResult } from "./db-diagram-view/utils/getLayoutedElements
 import getLayoutedElementsForDBDiagram from "./db-diagram-view/utils/getLayoutedElementsForDBDiagram";
 import getNodesForDBDiagram from "./db-diagram-view/utils/getNodesForDBDiagram";
 import { getEdgesForDBDiagram } from "./db-diagram-view/utils/getEdgesForDBDiagram";
+import type { ERDEntity } from "./erd-diagram-view/types";
 
 type ViewMode = "table" | "diagram";
 
 interface ERDTableTabsProps {
   data: DBExtractionResult | ERDExtractionResult;
-  onDataChange?: (data: DBExtractionResult | ERDExtractionResult) => void;
+  onDataChange?: {
+    (data: DBExtractionResult, type: "db"): void;
+    (data: ERDExtractionResult, type: "erd"): void;
+  };
   isEditable?: boolean;
   className?: string;
 }
@@ -62,6 +66,11 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
         rankSeparation: 50,
       });
       setLayoutResult(newLayout);
+    } else {
+      const nodes = getNodesForDBDiagram(data.entities);
+      const edges = getEdgesForDBDiagram(nodes);
+      const newLayout = getLayoutedElementsForDBDiagram(nodes, edges);
+      setLayoutResult(newLayout);
     }
   }, [data]);
 
@@ -72,27 +81,79 @@ const ERDTableTabs: React.FC<ERDTableTabsProps> = ({
     }
   }, [data.entities, activeTab]);
 
-  const handleEntityChange = (entityName: string, updatedEntity: DBEntity) => {
+  const handleEntityChange = (entityName: string, updatedEntity: DBEntity | ERDEntity) => {
     if (onDataChange && data.type === "PHYSICAL_DB") {
-      const updatedEntities = data.entities.map((e) => (e.name === entityName ? updatedEntity : e));
-      onDataChange({
-        type: "PHYSICAL_DB",
-        entities: updatedEntities,
-        ddlScript: data.ddlScript,
-        mermaidDiagram: data.mermaidDiagram,
-      });
+      const updatedEntities = data.entities.map((e) =>
+        e.name === entityName ? (updatedEntity as DBEntity) : e,
+      );
+      onDataChange(
+        {
+          type: "PHYSICAL_DB",
+          entities: updatedEntities,
+          ddlScript: data.ddlScript,
+          mermaidDiagram: data.mermaidDiagram,
+        },
+        "db",
+      );
+    } else if (onDataChange && data.type === "ERD") {
+      const updatedEntities = data.entities.map((e) =>
+        e.name === entityName ? (updatedEntity as ERDEntity) : e,
+      );
+      onDataChange(
+        {
+          type: "ERD",
+          entities: updatedEntities,
+          relationships: data.relationships,
+        },
+        "erd",
+      );
     }
   };
 
   const handleDeleteEntity = (entityName: string) => {
     if (onDataChange && data.type === "PHYSICAL_DB") {
       const updatedEntities = data.entities.filter((e) => e.name !== entityName);
-      onDataChange({
-        type: "PHYSICAL_DB",
-        entities: updatedEntities,
-        ddlScript: data.ddlScript,
-        mermaidDiagram: data.mermaidDiagram,
-      });
+
+      // Remove foreign key references to the deleted entity
+      const updatedEntitiesWithRemovedReferences = updatedEntities.map((e) => ({
+        ...e,
+        attributes: e.attributes.map((a) => ({
+          ...a,
+          foreignKey: a.foreignKey && a.foreignKeyTable === entityName ? false : a.foreignKey,
+          foreignKeyTable:
+            a.foreignKey && a.foreignKeyTable === entityName ? undefined : a.foreignKeyTable,
+        })),
+      }));
+
+      onDataChange(
+        {
+          type: "PHYSICAL_DB",
+          entities: updatedEntitiesWithRemovedReferences,
+          ddlScript: data.ddlScript,
+          mermaidDiagram: data.mermaidDiagram,
+        },
+        "db",
+      );
+
+      // Switch to first available tab
+      if (activeTab === entityName && updatedEntitiesWithRemovedReferences.length > 0) {
+        setActiveTab(updatedEntitiesWithRemovedReferences[0].name);
+      }
+    } else if (onDataChange && data.type === "ERD") {
+      const updatedEntities = data.entities.filter((e) => e.name !== entityName);
+
+      // Remove relationships connected to the deleted entity
+      const updatedRelationships = data.relationships.filter(
+        (r) => r.sourceEntity !== entityName && r.targetEntity !== entityName,
+      );
+      onDataChange(
+        {
+          type: "ERD",
+          entities: updatedEntities,
+          relationships: updatedRelationships,
+        },
+        "erd",
+      );
 
       // Switch to first available tab
       if (activeTab === entityName && updatedEntities.length > 0) {

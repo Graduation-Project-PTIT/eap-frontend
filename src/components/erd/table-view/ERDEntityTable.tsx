@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -18,28 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Edit3, Database, Plus, Trash2, Save, Key, Link, Type } from "lucide-react";
+import { Database, Key, Link, Type } from "lucide-react";
 import type { DBAttribute, DBEntity } from "@/api";
+import type { ERDAttribute, ERDEntity } from "../erd-diagram-view/types";
+import EditEntityDialog from "./EditEntityDialog";
 
 // EntityTable component for individual entity display
 interface EntityTableProps {
-  entity: DBEntity;
+  entity: DBEntity | ERDEntity;
   isEditable: boolean;
   availableEntities: string[];
-  onEntityChange: (entity: DBEntity) => void;
+  onEntityChange: (entity: DBEntity | ERDEntity) => void;
   onEntityDelete: () => void;
 }
 
 // Helper functions
-const getAttributeIcon = (attribute: DBAttribute) => {
+const getAttributeIcon = (attribute: DBAttribute | ERDAttribute) => {
   if (attribute.primaryKey) {
     return <Key className="h-3 w-3 text-yellow-600" />;
   }
@@ -49,7 +34,7 @@ const getAttributeIcon = (attribute: DBAttribute) => {
   return <Type className="h-3 w-3 text-gray-500" />;
 };
 
-const getAttributeBadgeVariant = (attribute: DBAttribute) => {
+const getAttributeBadgeVariant = (attribute: DBAttribute | ERDAttribute) => {
   if (attribute.primaryKey) return "default";
   if (attribute.foreignKey) return "secondary";
   if (attribute.unique) return "outline";
@@ -64,7 +49,7 @@ const EntityTable: React.FC<EntityTableProps> = ({
   onEntityDelete,
 }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editedEntity, setEditedEntity] = useState<DBEntity>(entity);
+  const [editedEntity, setEditedEntity] = useState<DBEntity | ERDEntity>(entity);
 
   // Update edited entity when prop changes
   useEffect(() => {
@@ -109,7 +94,7 @@ const EntityTable: React.FC<EntityTableProps> = ({
     });
   };
 
-  const getRelationshipInfo = (attribute: DBAttribute) => {
+  const getRelationshipInfo = (attribute: DBAttribute | ERDAttribute) => {
     if (!attribute.foreignKey || !attribute.foreignKeyTable) return null;
 
     return {
@@ -131,191 +116,19 @@ const EntityTable: React.FC<EntityTableProps> = ({
             </Badge>
           </div>
           {isEditable && (
-            <div className="flex items-center space-x-2">
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Edit Entity
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Edit Entity: {entity.name}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Entity Name</label>
-                      <Input
-                        value={editedEntity.name}
-                        onChange={(e) => setEditedEntity({ ...editedEntity, name: e.target.value })}
-                        placeholder="Entity name"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Attributes</label>
-                        <Button variant="outline" size="sm" onClick={addAttribute}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Attribute
-                        </Button>
-                      </div>
-
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>PK</TableHead>
-                            <TableHead>FK</TableHead>
-                            <TableHead>Unique</TableHead>
-                            <TableHead>Nullable</TableHead>
-                            <TableHead>FK Table</TableHead>
-                            <TableHead>FK Column</TableHead>
-                            <TableHead>Relation</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {editedEntity.attributes.map((attr, index) => (
-                            <TableRow key={index}>
-                              <TableCell>
-                                <Input
-                                  value={attr.name}
-                                  onChange={(e) => updateAttribute(index, "name", e.target.value)}
-                                  className="w-full"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={attr.type}
-                                  onChange={(e) => updateAttribute(index, "type", e.target.value)}
-                                  className="w-full"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Checkbox
-                                  checked={attr.primaryKey}
-                                  onCheckedChange={(checked) =>
-                                    updateAttribute(index, "primaryKey", checked)
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Checkbox
-                                  checked={attr.foreignKey}
-                                  onCheckedChange={(checked) =>
-                                    updateAttribute(index, "foreignKey", checked)
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Checkbox
-                                  checked={attr.unique}
-                                  onCheckedChange={(checked) =>
-                                    updateAttribute(index, "unique", checked)
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Checkbox
-                                  checked={attr.nullable}
-                                  onCheckedChange={(checked) =>
-                                    updateAttribute(index, "nullable", checked)
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell>
-                                {attr.foreignKey && (
-                                  <Select
-                                    value={attr.foreignKeyTable || ""}
-                                    onValueChange={(value) =>
-                                      updateAttribute(index, "foreignKeyTable", value)
-                                    }
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select table" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {availableEntities
-                                        .filter((name) => name !== entity.name)
-                                        .map((name) => (
-                                          <SelectItem key={name} value={name}>
-                                            {name}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {attr.foreignKey && (
-                                  <Input
-                                    value={attr.foreignKeyAttribute || ""}
-                                    onChange={(e) =>
-                                      updateAttribute(index, "foreignKeyAttribute", e.target.value)
-                                    }
-                                    placeholder="id"
-                                    className="w-full"
-                                  />
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {attr.foreignKey && (
-                                  <Select
-                                    value={attr.relationType || "many-to-one"}
-                                    onValueChange={(value) =>
-                                      updateAttribute(index, "relationType", value)
-                                    }
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="one-to-one">One-to-One</SelectItem>
-                                      <SelectItem value="one-to-many">One-to-Many</SelectItem>
-                                      <SelectItem value="many-to-one">Many-to-One</SelectItem>
-                                      <SelectItem value="many-to-many">Many-to-Many</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeAttribute(index)}
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    <div className="flex justify-between pt-4">
-                      <Button variant="destructive" onClick={onEntityDelete}>
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Entity
-                      </Button>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleSaveChanges}>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Changes
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <EditEntityDialog
+              isOpen={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+              defaultEntity={entity}
+              editedEntity={editedEntity}
+              availableEntities={availableEntities}
+              onEntityDelete={onEntityDelete}
+              setEditedEntity={setEditedEntity}
+              addAttribute={addAttribute}
+              removeAttribute={removeAttribute}
+              updateAttribute={updateAttribute}
+              handleSave={handleSaveChanges}
+            />
           )}
         </CardTitle>
       </CardHeader>

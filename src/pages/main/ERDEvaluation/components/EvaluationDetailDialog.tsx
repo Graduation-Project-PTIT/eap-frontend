@@ -119,9 +119,9 @@ const EvaluationDetailDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-6 p-6 flex-1 overflow-hidden">
-          {/* Left Side - Image Preview & Info (40%) */}
-          <div className="flex flex-col overflow-hidden w-[40%] space-y-4">
+        <div className="flex gap-6 px-4 pb-4 flex-1 overflow-hidden">
+          {/* Left Side - Image Preview & Info (35%) */}
+          <div className="flex flex-col overflow-hidden w-[35%] space-y-4">
             {/* Diagram - 70% */}
             <div className="flex flex-col overflow-hidden h-[70%]">
               <h3 className="text-sm font-semibold mb-3 shrink-0">Uploaded Diagram</h3>
@@ -177,12 +177,12 @@ const EvaluationDetailDialog = ({
             </Card>
           </div>
 
-          {/* Right Side - Evaluation Report (60%) */}
-          <div className="flex flex-col overflow-hidden w-[60%] space-y-4">
+          {/* Right Side - Evaluation Report (65%) */}
+          <div className="flex flex-col overflow-hidden w-[65%] space-y-4">
             {/* Evaluation Report */}
             {evaluation.evaluationReport && (
-              <Card className="flex-1 overflow-hidden flex flex-col min-h-0">
-                <CardHeader className="pb-3 shrink-0">
+              <Card className="overflow-hidden flex flex-col min-h-0 h-[55%]">
+                <CardHeader className="shrink-0 mb-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Evaluation Report</CardTitle>
                     <div className="flex items-center gap-3">
@@ -214,7 +214,7 @@ const EvaluationDetailDialog = ({
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-auto min-h-0">
+                <CardContent className="flex-1 overflow-auto min-h-0 mt-0">
                   {showRawMarkdown ? (
                     <pre className="text-xs font-mono whitespace-pre-wrap bg-muted p-4 rounded-lg">
                       {evaluation.evaluationReport}
@@ -278,11 +278,11 @@ const EvaluationDetailDialog = ({
 
             {/* Extracted Information */}
             {evaluation.extractedInformation && (
-              <Card className="shrink-0">
+              <Card className="h-[45%] shrink-0">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Extracted Diagram Information</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
+                <CardContent className="overflow-auto">
                   <ERDFormatTabs data={evaluation.extractedInformation} isEditable={false} />
                 </CardContent>
               </Card>
