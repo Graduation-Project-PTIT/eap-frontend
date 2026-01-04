@@ -66,7 +66,7 @@ const ChatInput = ({
       )}
 
       {/* Input Area */}
-      <div className="flex items-end gap-2">
+      <div className="flex items-center gap-2">
         <Textarea
           ref={textareaRef}
           value={value}
@@ -74,7 +74,7 @@ const ChatInput = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isLoading}
-          className="min-h-[60px] max-h-[200px] resize-none"
+          className="h-[60px] max-h-[200px] resize-none"
           rows={1}
         />
         <Button
