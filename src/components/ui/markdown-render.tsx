@@ -39,6 +39,14 @@ const MarkdownRender = ({ content }: MarkdownRenderProps) => {
             <code className={className}>{children}</code>
           );
         },
+        // Custom styling for pre (code blocks)
+        pre: ({ children }) => (
+          <pre className="bg-muted p-3 rounded-md mb-4 overflow-x-auto max-w-full">
+            <code className="text-sm font-mono block whitespace-pre-wrap break-words">
+              {children}
+            </code>
+          </pre>
+        ),
         // Custom styling for paragraphs
         p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
         // Custom styling for strong/bold text

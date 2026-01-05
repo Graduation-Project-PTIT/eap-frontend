@@ -127,7 +127,7 @@ const ConversationList = ({ currentConversationId }: ConversationListProps) => {
                       <div className="flex-1 min-w-0">
                         <p
                           className={cn(
-                            "text-sm font-normal line-clamp-1",
+                            "text-sm font-normal line-clamp-1 overflow-hidden text-ellipsis break-words",
                             isActive ? "font-medium text-white dark:text-black" : "text-foreground",
                           )}
                           title={conversation.conversationTitle}

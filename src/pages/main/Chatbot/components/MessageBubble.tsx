@@ -61,8 +61,15 @@ const MessageBubble = ({ message, onSchemaClick }: MessageBubbleProps) => {
       )}
 
       <div className={cn("flex flex-col gap-1 max-w-[70%]", isUser && "items-end")}>
-        <Card className={cn("p-4", isUser ? "bg-primary text-primary-foreground" : "bg-muted")}>
-          <MarkdownRender content={message.content} />
+        <Card
+          className={cn(
+            "p-4 overflow-hidden",
+            isUser ? "bg-primary text-primary-foreground" : "bg-muted",
+          )}
+        >
+          <div className="overflow-x-auto max-w-full">
+            <MarkdownRender content={message.content} />
+          </div>
         </Card>
 
         <div className="flex items-center gap-2 px-2">
