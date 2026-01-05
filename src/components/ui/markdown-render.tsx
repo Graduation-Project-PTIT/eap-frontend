@@ -53,6 +53,19 @@ const MarkdownRender = ({ content }: MarkdownRenderProps) => {
         strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
         // Custom styling for emphasis/italic text
         em: ({ children }) => <em className="italic">{children}</em>,
+        // Custom styling for tables
+        table: ({ children }) => (
+          <div className="overflow-x-auto my-4">
+            <table className="min-w-full border-collapse border border-border">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+        th: ({ children }) => (
+          <th className="border border-border px-4 py-2 text-left font-semibold">{children}</th>
+        ),
+        td: ({ children }) => <td className="border border-border px-4 py-2">{children}</td>,
       }}
     >
       {content}
