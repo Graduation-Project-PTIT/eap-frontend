@@ -37,12 +37,12 @@ export interface ChatResponse {
   success: boolean;
   conversationId: string;
   response: string;
-  schema: { entities: DBEntity[] }; // Physical DB schema
-  erdSchema?: ERDSchema | null; // ERD schema (Chen notation)
+  schema: { entities: DBEntity[] };
+  erdSchema?: ERDSchema | null;
   ddl: string;
   runId: string;
-  blocked?: boolean; // Flag indicating if schema creation was blocked
-  diagramType?: DiagramType; // Current diagram type
+  blocked?: boolean;
+  diagramType?: DiagramType;
 }
 
 export interface Conversation {

@@ -5,10 +5,6 @@ export interface SchemaState {
   entities: DBEntity[];
 }
 
-/**
- * Deep equality check for schema objects
- * Compares entities by serializing and comparing JSON strings
- */
 const isSchemaEqual = (a: SchemaState | null, b: SchemaState | null): boolean => {
   if (a === b) return true;
   if (!a || !b) return false;

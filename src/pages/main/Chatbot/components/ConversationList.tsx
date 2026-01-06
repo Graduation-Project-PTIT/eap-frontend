@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare, Trash2, Loader2, Plus } from "lucide-react";
+import { MessageSquare, Loader2, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,11 +29,6 @@ const ConversationList = ({ currentConversationId }: ConversationListProps) => {
 
   const handleConversationClick = (conversationId: string) => {
     navigate(`/chat/${conversationId}`);
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent, conversationId: string) => {
-    e.stopPropagation();
-    setDeleteConversationId(conversationId);
   };
 
   const handleDeleteConfirm = async () => {
@@ -135,26 +130,6 @@ const ConversationList = ({ currentConversationId }: ConversationListProps) => {
                           {conversation.conversationTitle || "Untitled Conversation"}
                         </p>
                       </div>
-
-                      {/* Delete Button - Show on hover */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className={cn(
-                          "h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0",
-                          isActive && "hover:bg-white/20 dark:hover:bg-black/20",
-                        )}
-                        onClick={(e) => handleDeleteClick(e, conversation.id)}
-                      >
-                        <Trash2
-                          className={cn(
-                            "h-3 w-3",
-                            isActive
-                              ? "text-white dark:text-black hover:text-red-400"
-                              : "text-muted-foreground hover:text-destructive",
-                          )}
-                        />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

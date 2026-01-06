@@ -188,14 +188,6 @@ const Chatbot = () => {
   const handleSchemaClick = useCallback(
     (tabToOpen?: string) => {
       console.log("🖱️ Schema click - tab to open:", tabToOpen);
-      console.log(
-        "📊 Current schemas - ERD:",
-        currentErdSchema,
-        "Physical:",
-        currentSchema,
-        "DDL:",
-        currentDdl?.substring(0, 50),
-      );
 
       // Override tab selection based on what actually exists in conversation state
       let actualTab = tabToOpen;

@@ -1,6 +1,5 @@
 import type { ChatMessage, ChatResponse } from "@/api/services/chat-service";
 
-// Create a user message object
 export const createUserMessage = (content: string): ChatMessage => {
   return {
     id: crypto.randomUUID(),
@@ -10,7 +9,6 @@ export const createUserMessage = (content: string): ChatMessage => {
   };
 };
 
-// Create an assistant message object from API response
 export const createAssistantMessage = (response: ChatResponse): ChatMessage => {
   return {
     id: crypto.randomUUID(),
@@ -25,7 +23,6 @@ export const createAssistantMessage = (response: ChatResponse): ChatMessage => {
   };
 };
 
-// Check if a message has schema data (Physical DB or ERD)
 export const hasSchema = (message: ChatMessage): boolean => {
   const hasPhysicalSchema = !!message.schema && message.schema.entities.length > 0;
   const hasErdSchema = !!message.erdSchema && message.erdSchema.entities.length > 0;
