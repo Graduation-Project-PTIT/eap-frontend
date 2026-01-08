@@ -87,6 +87,7 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
   const isMultivalued = data.type === "multivalued-attribute";
   const isDerived = data.type === "derived-attribute";
   const isComposite = data.type === "composite-attribute";
+  const isPartialKey = data.isPartialKey;
 
   // Determine colors based on attribute type
   const getAttributeColors = () => {
@@ -120,6 +121,14 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
         border: "border-emerald-600",
         text: "text-emerald-900",
         handle: "!bg-emerald-600",
+      };
+    }
+    if (isPartialKey) {
+      return {
+        bg: "bg-amber-100",
+        border: "border-amber-600",
+        text: "text-amber-900",
+        handle: "!bg-amber-600",
       };
     }
     // Regular attribute
@@ -209,6 +218,7 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
           colors.text,
           // Key attribute: underlined text
           isKeyAttribute && "underline decoration-2",
+          isPartialKey && "underline decoration-2 decoration-dashed",
         )}
       >
         {data.label}
@@ -224,6 +234,14 @@ export const ERDAttributeNode = ({ data, selected }: NodeProps<AttributeNodeProp
 type RelationshipNodeProps = Node<ERDRelationshipNodeData, "erdRelationshipNode">;
 
 export const ERDRelationshipNode = ({ data, selected }: NodeProps<RelationshipNodeProps>) => {
+  const isIdentifying = data.isIdentifying;
+
+  if (isIdentifying) {
+    console.log(data.sourceEntity, "is a weak entity and depends on", data.targetEntity);
+  }
+
+  const additionalClasses = isIdentifying ? "ring-2 ring-offset-1 ring-rose-600" : "";
+
   return (
     <div className="relative w-[140px] h-[140px] flex items-center justify-center">
       {/* Connection handles positioned at diamond vertices (peaks) */}
@@ -299,6 +317,7 @@ export const ERDRelationshipNode = ({ data, selected }: NodeProps<RelationshipNo
           "w-[100px] h-[100px] bg-rose-100 border-2 border-rose-600 shadow-md transition-shadow",
           "flex items-center justify-center",
           "rotate-45",
+          additionalClasses,
           selected && "shadow-lg ring-2 ring-blue-500",
         )}
       >

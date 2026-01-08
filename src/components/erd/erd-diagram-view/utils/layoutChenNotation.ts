@@ -352,6 +352,7 @@ export const layoutChenNotation = (
       sourceEntity: rel.sourceEntity,
       targetEntity: rel.targetEntity,
       relationType: rel.relationType,
+      isIdentifying: rel.isIdentifying,
     };
 
     nodes.push({
@@ -439,6 +440,7 @@ const createAttributeNodesWithLayout = (
     label: attribute.name,
     entityName: entityName,
     parentAttributeName: parentAttributeName,
+    isPartialKey: attribute?.partialKey || false,
   };
 
   nodes.push({

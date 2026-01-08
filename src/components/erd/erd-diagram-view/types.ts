@@ -40,6 +40,8 @@ export interface ERDAttribute {
   relationType?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
   relationshipName?: string; // Name of the relationship (e.g., "has", "belongs to", "manages")
 
+  partialKey?: boolean;
+
   // Composite attribute support
   subAttributes?: ERDAttribute[];
 
@@ -69,6 +71,7 @@ export interface ERDRelationship {
   sourceEntity: string;
   targetEntity: string;
   relationType: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+  isIdentifying?: boolean;
 
   // Participation constraints
   sourceParticipation?: "total" | "partial"; // Total = double line, Partial = single line
@@ -120,6 +123,7 @@ export type ERDAttributeNodeData = {
   attribute: ERDAttribute;
   label: string;
   entityName: string;
+  isPartialKey: boolean;
 
   // For composite attributes
   parentAttributeName?: string;
@@ -134,6 +138,7 @@ export type ERDRelationshipNodeData = {
   sourceEntity: string;
   targetEntity: string;
   relationType?: "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+  isIdentifying?: boolean;
 
   // Participation constraints
   sourceParticipation?: "total" | "partial";
