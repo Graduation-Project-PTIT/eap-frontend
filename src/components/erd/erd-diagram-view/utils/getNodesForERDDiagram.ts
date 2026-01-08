@@ -167,6 +167,7 @@ const createAttributeNodes = (
     label: attribute.name,
     entityName: entityName,
     parentAttributeName: parentAttributeName,
+    isPartialKey: attribute?.partialKey || false,
   };
 
   // Position attributes in a circular pattern around the entity
