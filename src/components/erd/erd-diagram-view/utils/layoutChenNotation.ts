@@ -374,6 +374,7 @@ export const layoutChenNotation = (
       type: ERD_EDGE_TYPES.DEFAULT,
       data: {
         sourceLabel: getCardinalityLabel(rel.relationType, "source"),
+        participation: rel.sourceParticipation,
       },
     });
 
@@ -389,6 +390,7 @@ export const layoutChenNotation = (
       type: ERD_EDGE_TYPES.DEFAULT,
       data: {
         targetLabel: getCardinalityLabel(rel.relationType, "target"),
+        participation: rel.targetParticipation,
       },
     });
   });

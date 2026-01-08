@@ -25,26 +25,46 @@ const ERDEdge = ({
     targetY,
   });
 
-  // Calculate label positions
-  // Source label: 25% along the edge from source
-  // Target label: 75% along the edge from source (25% from target)
   const sourceLabelX = sourceX + (targetX - sourceX) * 0.25;
   const sourceLabelY = sourceY + (targetY - sourceY) * 0.25;
   const targetLabelX = sourceX + (targetX - sourceX) * 0.75;
   const targetLabelY = sourceY + (targetY - sourceY) * 0.75;
 
+  const isDoubleLine = data?.participation === "total";
+  const activeColor = selected ? "#3b82f6" : "#374151";
+
   return (
     <>
-      <BaseEdge
-        id={id}
-        path={edgePath}
-        style={{
-          stroke: selected ? "#3b82f6" : "#374151",
-          strokeWidth: selected ? 2 : 1,
-        }}
-      />
+      {isDoubleLine ? (
+        <>
+          <BaseEdge
+            id={`${id}-outer`}
+            path={edgePath}
+            style={{
+              stroke: activeColor,
+              strokeWidth: selected ? 5 : 4,
+            }}
+          />
+          <BaseEdge
+            id={`${id}-inner-gap`}
+            path={edgePath}
+            style={{
+              stroke: "white",
+              strokeWidth: selected ? 2 : 1.5,
+            }}
+          />
+        </>
+      ) : (
+        <BaseEdge
+          id={id}
+          path={edgePath}
+          style={{
+            stroke: activeColor,
+            strokeWidth: selected ? 2 : 1,
+          }}
+        />
+      )}
 
-      {/* Render cardinality labels */}
       <EdgeLabelRenderer>
         {data?.sourceLabel && (
           <div
